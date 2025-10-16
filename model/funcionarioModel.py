@@ -10,7 +10,7 @@ class funcionario(db.Model):
     nome = db.Column(db.String(100), nullable=False)
     senha = db.Column(db.String(20), nullable=True)
     salario = db.Column(db.Numeric(10,2), nullable = False)
-    is_active = db.Column(db.Boolean, nullable = False, default = True)
+    is_active = db.Column(db.Boolean, default = True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     deleted = db.Column(db.Integer, nullable=False, default=False)

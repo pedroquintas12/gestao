@@ -12,7 +12,6 @@ class servico(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     deleted = db.Column(db.Integer, nullable=False, default=False)
 
-    veiculos = db.relationship("veiculo", back_populates="servico", lazy="selectin")
 
     vendas = db.relationship("venda", back_populates="servico", lazy="selectin")
 

@@ -27,8 +27,14 @@ class cliente(db.Model):
         cascade="all, delete-orphan",
         lazy="selectin",
     )
-    def to_dict(self):
-        return{
+
+    def to_dict(self, with_children: bool = True):
+        data = {
             "id_cliente": self.id_cliente,
-            "nome": self.nome
-        }
+            "nome": self.nome,
+            "numero": self.numero
+            }
+        if with_children:
+            data["veiculos"] =  [v.to_dict() for v in getattr(self, "veiculos", [])]
+        return data
+     

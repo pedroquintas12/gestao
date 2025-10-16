@@ -17,11 +17,11 @@ def get_or_create(model, defaults=None, **filters):
 
 def seed_db(config):
 
-       # Admin (apenas se não existe)
+    # Admin (apenas se não existe)
     admin = User.query.filter_by(username="Admin").first()
     if not admin:
         hashed = bcrypt.generate_password_hash("001305").decode("utf-8")
-        admin = User(username="Admin",password=hashed, nome="Admin", is_active=True, is_admin=True)
+        admin = User(username="Admin",password=hashed, nome="Admin", is_admin=True)
         db.session.add(admin)
 
     db.session.commit()

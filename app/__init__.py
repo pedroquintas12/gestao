@@ -25,6 +25,12 @@ def create_app():
 
     register_error_handlers(app)
 
+    from routes.cliente import cliente_bp
+    from routes.veiculo import veiculo_bp
+
+    app.register_blueprint(cliente_bp)
+    app.register_blueprint(veiculo_bp)
+
     with app.app_context():
         import model
         db.create_all()

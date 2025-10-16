@@ -1,6 +1,6 @@
 from datetime import datetime
 from config.db import db
-
+from enums.status import status
 class venda(db.Model):
     
     __tablename__ = "vendas"
@@ -12,10 +12,11 @@ class venda(db.Model):
     id_veiculo = db.Column(db.Integer, db.ForeignKey("veiculo.id_veiculo"), nullable=False)
 
     total = db.Column(db.Numeric(10,2), nullable= False)
+    status = db.Column(db.String(15), nullable=False, default = status.ATIVO.name )
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    cliente = db.relationship("cliente", back_populates="vendas",  lazy="joined")
+    cliente = db.relationship("cliente", back_populates="venda",  lazy="joined")
     servico = db.relationship("servico", back_populates="vendas",  lazy="joined")
     veiculo = db.relationship("veiculo", back_populates="vendas",  lazy="joined")
 

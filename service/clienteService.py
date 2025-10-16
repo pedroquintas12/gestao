@@ -1,4 +1,6 @@
 
+from operator import or_
+from typing import Optional, Tuple
 from flask import jsonify
 from model.clienteModel import cliente
 from config.db import db
@@ -8,6 +10,7 @@ class clienteService():
         out= {}
 
         nome = data.get("nome")
+        numero = data.get("numero")
 
         if not nome:
             err[nome] = "Campo 'nome' Obrigatorio"
@@ -16,7 +19,8 @@ class clienteService():
         
         out.update({
             "nome": nome,
-            "cpf": cpf
+            "cpf": cpf,
+            "numero":numero
         })
         return out, err
             
@@ -31,13 +35,14 @@ class clienteService():
             app = cliente(**payload)
             db.session.add(app)
             db.session.commit()
+            return app
         except Exception as e:
             from utils.api_error import api_error
             return api_error(400,"erro ao criar cliente", exc=e)
     
 
     @staticmethod
-    def update_cliente(cid:int,data:dict) -> cliente:
+    def update_cliente(cid:int, data:dict) -> cliente:
         c = cliente.query.get_or_404(cid)
         payload,err = clienteService.valid_payload(data)
         if err:
@@ -53,5 +58,47 @@ class clienteService():
             db.session.rollback()
             return api_error(500, "Falha ao atualizar cliente", {"detail": str(e)})
         
+    @staticmethod
+    def list_cliente(
+        q: Optional[str] = None,
+        page: Optional[int] = 1,
+        per_page: Optional[int] = 24
+    ) -> Tuple[list, int]:
+        """
+        Retorna (itens, total_filtrado)
+        - itens: lista de clientes (já paginada)
+        - total_filtrado: total de registros após filtros (sem paginação)
+        """
+        # base query
+        query = cliente.query.filter_by(deleted=False)
+
+        # filtro de busca
+        if q:
+            like_query = f"%{q.strip()}%"
+            query = query.filter(or_(
+                cliente.nome.ilike(like_query),
+                cliente.cpf.ilike(like_query),
+                cliente.numero.ilike(like_query),
+            ))
+
+        # ordenação determinística (ajuste se preferir por nome, etc.)
+        query = query.order_by(cliente.id_cliente.desc())
+
+        # total após filtros (para paginação)
+        total = query.count()
+
+        # paginação (opcional)
+        if page and per_page:
+            # evita números inválidos
+            page = max(1, int(page))
+            per_page = max(1, min(int(per_page), 100))
+            itens = query.offset((page - 1) * per_page).limit(per_page).all()
+        else:
+            itens = query.all()
+
+        return itens, total
+        
+        
+
     
 
