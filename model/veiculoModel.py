@@ -1,34 +1,30 @@
-import datetime
+from datetime import datetime
 from config.db import db
 
 class veiculo(db.Model):
 
-    __tablename__ = "veiculos"
+    __tablename__ = "veiculo"
 
-    id_veiculo = db.Column(db.Integer, primary_key= True, autoicrement= True)
-    id_cliente = db.Column(db.Integer, nullable= False)
+    id_veiculo = db.Column(db.Integer, primary_key= True, autoincrement= True)
+    id_cliente = db.Column(db.Integer, db.ForeignKey("cliente.id_cliente"), nullable=False)
+    id_servico  = db.Column(db.Integer, db.ForeignKey("servico.id_servico"), nullable=True)
     kilometragem = db.Column(db.Integer, nullable = True)
     placa = db.Column(db.String(20), nullable= False)
     id_servico = db.Column(db.Integer, nullable= False)
     observacao = db.Column(db.Text, nullable= True)
-    status = db.Column(db.string(20), nullable = False, default = "ativo")
+    status = db.Column(db.String(20), nullable = False, default = "ativo")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    deleted = db.Column(db.Integer, nullable=False, default=0)
+    deleted = db.Column(db.Integer, nullable=False, default=False)
 
     cliente = db.relationship(
-        "clienteModel",
-        back_populates="cliente",
+        "cliente",
+        back_populates="veiculos",
         lazy="joined",
-        foreign_keys=[id_cliente],
     )
-
-    servico = db.relationship(
-        "servicoModel",
-        back_populates="servico",
-        lazy="joined",
-        foreign_keys=[id_servico],
-    )
+    servico = db.relationship("servico", back_populates="veiculos", lazy="joined")  
+    
+    vendas  = db.relationship("venda",   back_populates="veiculo",  cascade="all, delete-orphan", lazy="selectin")
 
     def to_dict(self):
         return{

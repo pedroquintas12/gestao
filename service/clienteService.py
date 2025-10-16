@@ -44,4 +44,14 @@ class clienteService():
             from utils.api_error import api_error
             return api_error(400,"erro ao validar cliente", err)
         try:
+            for k,v in payload.items():
+                setattr(c,k,v)
+            db.session.add(c)
+            db.session.commit()
+            return jsonify({c.to_dict()}),200
+        except Exception as e:
+            db.session.rollback()
+            return api_error(500, "Falha ao atualizar cliente", {"detail": str(e)})
+        
     
+
