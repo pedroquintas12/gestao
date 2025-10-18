@@ -1,7 +1,8 @@
-from datetime import datetime
-from config.db import db
 
-class User(db.Model):
+from config.db import db
+from model.mixins import TimestampMixin
+
+class User(db.Model,TimestampMixin):
 
     __tablename__ = 'users'
 
@@ -10,8 +11,7 @@ class User(db.Model):
     username = db.Column(db.String(150), unique=True, nullable=False)
     password = db.Column(db.String(256), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
     deleted = db.Column(db.Boolean, default=False)
     
 

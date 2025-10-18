@@ -1,0 +1,950 @@
+/* ======================================= */
+/* =====  CSS para Painel Administrativo  ===== */
+/* ======================================= */
+
+/* Importando as variáveis de cor para manter a consistência */
+:root {
+  --bg: #f8f9fa; /* Um fundo um pouco diferente para o admin */
+  --card: #ffffff;
+  --text: #0f172a;
+  --muted: #475569;
+  --primary: #FF914D;
+  --primary-600: #ff7d2e;
+  --accent: #5BC0F8;
+  --accent-100: #E6F5FE;
+  --radius: 16px;
+  --shadow: 0 4px 6px -1px rgba(0,0,0,.07), 0 2px 4px -2px rgba(0,0,0,.05);
+  --sidebar-bg: #1f2937;
+  --sidebar-text: #d1d5db;
+  --sidebar-hover: #374151;
+  --sidebar-active: var(--primary);
+}
+
+body {
+  display: flex;
+  background-color: var(--bg);
+}
+
+/* ===== MENU LATERAL (SIDEBAR) ===== */
+.sidebar {
+  width: 270px;
+  background-color: var(--sidebar-bg);
+  color: var(--sidebar-text);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  min-height: 100vh;
+}
+
+.sidebar-header {
+  padding: 24px;
+  border-bottom: 1px solid var(--sidebar-hover);
+}
+
+.sidebar .logo {
+  color: #fff;
+}
+
+.sidebar-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 16px;
+}
+
+.sidebar-nav a {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: background-color 0.2s, color 0.2s;
+  color: var(--sidebar-text);
+}
+
+.sidebar-nav a:hover {
+  background-color: var(--sidebar-hover);
+  color: #fff;
+}
+
+.sidebar-nav a.active {
+  background-color: var(--sidebar-active);
+  color: #fff;
+}
+
+/* ícone e rótulo do item (para o modo “slim”) */
+.sidebar .nav-link i { font-size: 1.25rem; line-height: 1; }
+.sidebar .nav-link .label { white-space: nowrap; }
+
+/* ===== CONTEÚDO PRINCIPAL ===== */
+.main-content {
+  flex-grow: 1;
+  padding: 40px;
+  overflow-y: auto;
+}
+
+.main-content .title {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.main-content .subtitle {
+  margin-top: 0;
+  margin-bottom: 32px;
+}
+
+/* ===== CARDS DE CONTEÚDO ===== */
+.content-card {
+  background-color: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.card-header h2 {
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+  font-size: 20px;
+}
+
+/* ===== TABELAS ===== */
+.custom-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.custom-table th, .custom-table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.custom-table th {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.custom-table td {
+  font-size: 15px;
+}
+
+.custom-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.actions-cell button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  margin-right: 8px;
+}
+
+.status {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.status.active {
+  background-color: #dcfce7;
+  color: #166534;
+}
+.status.inactive {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* ===== FORMULÁRIO DE PRODUTOS ===== */
+.product-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.grid-three {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+.product-form .btn-row {
+    justify-content: flex-end; /* Alinha botão à direita */
+    margin-top: 0;
+}
+
+/* ===== RESPONSIVIDADE ===== */
+
+/* — Slim sidebar (apenas ícones) em telas pequenas — */
+@media (max-width: 992px) {
+  /* transforma a sidebar em coluna estreita fixa */
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: 64px;
+    min-height: 100vh;
+    padding: 12px 8px;
+    align-items: center;
+  }
+  .sidebar-header {
+    padding: 12px;
+    border-bottom: 0;
+    display: flex; justify-content: center;
+  }
+  .sidebar .logo span:not(.paw) { display: none; }      /* esconde texto do logo */
+  .sidebar-nav ul { padding: 8px 0; }
+  .sidebar-nav a {
+    justify-content: center;
+    gap: 0;
+    padding: 10px 8px;
+  }
+  .sidebar .nav-link .label { display: none; }          /* esconde rótulos */
+  .main-content {
+    padding: 24px;
+    margin-left: 72px;                                   /* compensa a largura slim */
+  }
+  .grid-three { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+}
+
+/* ================================================= */
+/* ===== ESTILOS DE FORMULÁRIO (Inputs, Labels, etc.) ===== */
+/* ================================================= */
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 8px; /* Espaço entre o título e a caixa */
+  display: block;
+}
+
+/* SELETORES ATUALIZADOS PARA INCLUIR O MODAL */
+/* Estilo base para todos os campos */
+.main-content input[type="text"],
+.main-content input[type="number"],
+.main-content select,
+.main-content textarea,
+.modal-content input[type="text"],
+.modal-content input[type="number"],
+.modal-content select,
+.modal-content textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #cbd5e1; /* Borda um pouco mais escura */
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: 'Inter', sans-serif;
+  background-color: #f8f9fa;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* Sombra sutil */
+}
+
+/* Estilo específico para SELECT (seta customizada) */
+.main-content select,
+.modal-content select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236b7280' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px; /* Garante espaço para a seta */
+}
+
+/* O textarea não precisa de seta, então removemos a imagem para ele */
+.main-content textarea,
+.modal-content textarea {
+    background-image: none;
+    padding-right: 12px;
+}
+
+/* Efeito de FOCO para todos os campos */
+.main-content input[type="text"]:focus,
+.main-content input[type="number"]:focus,
+.main-content select:focus,
+.main-content textarea:focus,
+.modal-content input[type="text"]:focus,
+.modal-content input[type="number"]:focus,
+.modal-content select:focus,
+.modal-content textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  background-color: var(--card);
+  box-shadow: 0 0 0 3px rgba(255, 145, 77, 0.4), 0 1px 3px rgba(0,0,0,0.1); /* Sombra mais intensa no foco */
+}
+
+/* ======================================= */
+/* ===== ESTILOS DO MODAL ===== */
+/* ======================================= */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+/* Classe para esconder o modal */
+.modal-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.modal-content {
+  background-color: var(--card);
+  padding: 32px;
+  border-radius: var(--radius);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  width: 100%;
+  max-width: 600px;
+  transform: scale(1);
+  transition: transform 0.3s ease;
+}
+
+.modal-overlay.hidden .modal-content {
+  transform: scale(0.95);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h2 {
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+  font-size: 20px;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 28px;
+  font-weight: bold;
+  color: var(--muted);
+  cursor: pointer;
+  line-height: 1;
+}
+
+#vet-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.grid-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+/* Nova regra para garantir o estilo correto dos botões no rodapé do modal */
+.modal-footer .btn {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 10px 20px;
+}
+
+/* ======================================= */
+/* ===== PÁGINA DE PRODUTOS ===== */
+/* ======================================= */
+
+.product-grid {
+  display: grid;
+  /* Cria colunas que se ajustam automaticamente ao tamanho da tela */
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.product-card {
+  background-color: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid #e2e8f0;
+  overflow: hidden; /* Garante que a imagem não vaze das bordas arredondadas */
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1);
+}
+
+.product-card img {
+  width: 100%;
+  aspect-ratio: 16 / 10; /* Proporção da imagem */
+  object-fit: cover; /* Garante que a imagem cubra a área sem distorcer */
+}
+
+.product-card-content {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-grow: 1; /* Faz esta área crescer para empurrar o rodapé para baixo */
+}
+
+.product-category {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  background-color: #fff1e8;
+  padding: 4px 10px;
+  border-radius: 999px;
+  align-self: flex-start; /* Alinha o badge à esquerda */
+}
+
+.product-card h4 {
+  font-family: 'Poppins', sans-serif;
+  font-size: 18px;
+  margin: 0;
+}
+
+.product-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.product-card-footer {
+  padding: 16px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end; /* Alinha botões à direita */
+  gap: 12px;
+}
+
+/* Estilo para o botão de 'Remover' */
+.btn.danger {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  box-shadow: none;
+}
+.btn.danger:hover {
+  background-color: #ef4444;
+  color: #fff;
+}
+
+/* ======================================= */
+/* ===== ESTILO DO ACORDEÃO DE VETS ===== */
+/* ======================================= */
+
+.vet-accordion {
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.vet-accordion-item:not(:last-child) {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.vet-accordion-header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  padding: 16px 24px;
+  background-color: var(--card);
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.2s ease;
+}
+
+.vet-accordion-header:hover {
+  background-color: #f8f9fa;
+}
+
+.vet-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vet-name {
+  font-family: 'Poppins', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.vet-specialty {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.vet-status-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.accordion-arrow {
+  font-size: 24px;
+  color: var(--muted);
+  transition: transform 0.3s ease;
+}
+
+.vet-accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+  background-color: #f8f9fa;
+}
+
+.vet-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    padding: 24px;
+}
+
+.detail-card {
+    background-color: var(--card);
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.detail-card h3 {
+    font-size: 16px;
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-family: 'Poppins', sans-serif;
+}
+
+.appointments-list, .patients-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--muted);
+}
+
+.no-data-message {
+    padding: 24px;
+    color: var(--muted);
+    font-style: italic;
+}
+
+/* Estilo para quando o acordeão está aberto */
+.vet-accordion-item.is-open .vet-accordion-header {
+  background-color: #f8f9fa;
+}
+
+.vet-accordion-item.is-open .accordion-arrow {
+  transform: rotate(180deg);
+}
+
+.vet-accordion-item.is-open .vet-accordion-content {
+  max-height: 500px; /* Um valor alto para permitir a expansão */
+}
+
+/* ============================================== */
+/* ===== PÁGINA DE HISTÓRICO DE VENDAS ===== */
+/* ============================================== */
+
+/* Grid para os Cards de Resumo (KPIs) */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.kpi-card {
+  background-color: var(--card);
+  padding: 24px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kpi-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.kpi-value {
+  font-family: 'Poppins', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* Barra de Filtros */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap; /* Permite que os filtros quebrem linha em telas menores */
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+}
+
+.filter-input {
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  background-color: #f8f9fa;
+}
+
+.filter-bar .search-input {
+    flex-grow: 1; /* Faz a barra de busca ocupar o espaço restante */
+}
+
+/* Novos Status de Venda */
+.status.completed {
+  background-color: #dcfce7; /* Verde */
+  color: #166534;
+}
+
+.status.shipped {
+  background-color: #dbeafe; /* Azul */
+  color: #1e40af;
+}
+
+.status.processed {
+  background-color: #fef9c3; /* Amarelo */
+  color: #854d0e;
+}
+
+/* ===== INPUT DE ARQUIVO (MESMO PADRÃO DO PAINEL) ===== */
+.file-input {
+  display: grid;
+  gap: 10px;
+}
+
+/* Esconde visualmente o input, mantendo acessibilidade via label[for] */
+.file-input input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* Zona de drop/seleção */
+.file-drop {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background-color: var(--card);
+  border: 2px dashed #e2e8f0;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: border-color .2s, box-shadow .2s, background-color .2s, transform .1s ease-in-out;
+}
+
+.file-drop:hover {
+  background-color: #fafafa;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.file-input:focus-within .file-drop {
+  outline: none;
+  border-color: var(--primary);
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgba(255,145,77,.25), 0 1px 3px rgba(0,0,0,.08);
+}
+
+/* Ícone (SVG inline via background) */
+.file-drop__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background-color: var(--accent-100);
+  display: inline-block;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 28px;
+  /* Ícone de upload em SVG, na cor do texto muted */
+  background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' xmlns='http://www.w3.org/2000/svg' fill='none' stroke='%23475669' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/%3E%3Cpolyline points='17 8 12 3 7 8'/%3E%3Cline x1='12' y1='3' x2='12' y2='15'/%3E%3C/svg%3E");
+}
+
+.file-drop__text {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.file-drop__text strong {
+  color: var(--text);
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+}
+
+.file-drop__btn {
+  color: var(--primary-600);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.file-drop__hint {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Metadados (nome do arquivo) */
+.file-meta {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 8px 12px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+/* Pré-visualização opcional */
+.file-preview {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background-color: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.file-preview img {
+  width: 96px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+/* Estado "arrastando" (se aplicar uma classe via JS) */
+.file-drop.is-dragover {
+  border-color: var(--primary);
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgba(255,145,77,.25);
+}
+
+/* Mobile: empilha */
+@media (max-width: 480px) {
+  .file-drop {
+    grid-template-columns: 40px 1fr;
+    padding: 14px;
+  }
+  .file-drop__icon {
+    width: 40px; height: 40px; background-size: 22px;
+  }
+}
+
+/* ==== MODAL ==== */
+.modal {
+  position: fixed; inset: 0;
+  background: rgba(2,6,23,.45);
+  display: none; place-items: center;
+  z-index: 1050 !important;
+  backdrop-filter: none !important; /* evita o efeito de “embaçamento duplo” */
+}
+.modal.show { display: grid; }
+
+.modal-card {
+  width: min(900px, 95vw);
+  background: var(--card);
+  border-radius: 20px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  transform: translateY(4px);
+  animation: modalslide .18s ease-out both;
+}
+@keyframes modalslide {
+  to { transform: translateY(0); }
+}
+
+.modal-header, .modal-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 14px 18px; border-bottom: 1px solid rgba(2,6,23,.06);
+}
+.modal-footer { border-top: 1px solid rgba(2,6,23,.06); border-bottom: 0; }
+
+.modal-header h3 { margin: 0; font-family: Poppins, sans-serif; }
+.modal-close {
+  border: 0; background: transparent; font-size: 28px; line-height: 1;
+  cursor: pointer; color: var(--muted);
+}
+.modal-body { padding: 18px; }
+
+.order-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; margin-bottom: 12px;
+}
+.order-id-status { display: flex; align-items: center; gap: 10px; }
+.order-id { font-weight: 800; font-family: Poppins, sans-serif; }
+.pill {
+  display: inline-flex; align-items: center; padding: 4px 10px;
+  border-radius: 999px; font-size: 12px; font-weight: 700;
+}
+.pill-muted { background: #eef2f7; color: #334155; }
+.pill-processed { background: #fff7ed; color: #a04b00; }   /* andamento/processed */
+.pill-completed { background: #ecfdf5; color: #047857; }   /* finalizado/completed */
+.pill-shipped   { background: #eff6ff; color: #1d4ed8; }
+.pill-cancelled { background: #fef2f2; color: #b91c1c; }
+
+.order-meta { display: flex; gap: 10px; color: var(--muted); font-size: 13px; }
+.order-total { text-align: right; }
+.order-total small { display: block; color: var(--muted); margin-bottom: 2px; }
+.order-total strong { font-size: 20px; }
+
+.modal-table { width: 100%; }
+.modal-table td, .modal-table th { padding: 10px; }
+.modal-table tbody tr:nth-child(odd) { background: #fafafa; }
+
+.modal input,
+.modal select,
+.modal textarea {
+  pointer-events: auto !important;
+  position: relative !important;
+}
+
+.modal-backdrop {
+  z-index: 1040 !important;
+  background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Autocomplete do cliente no modal de venda */
+#venClienteResultados{
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0; right: 0;
+  display: none;                 /* mostrado via JS */
+  max-height: 260px;
+  overflow: auto;
+  background: #fff;              /* impede o select de “aparecer” por baixo */
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 12px 24px rgba(2,6,23,.12), 0 4px 10px rgba(2,6,23,.08);
+  z-index: 3000;                 /* maior que o do modal/seletores nativos */
+}
+
+/* Garante que o select respeite a pilha abaixo da lista */
+#venVei{ position: relative; z-index: 1; }
+
+/* ===== Correção: botões claros com texto escuro ===== */
+.btn-light,
+.btn-outline-light,
+.btn-white,
+.btn-light.card-btn {
+  color: #111 !important;
+}
+/* ===== Barra de ações — página CLIENTES ===== */
+#page-clientes .card-header .d-flex{
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Altura e cantos iguais para input e botões */
+#page-clientes .card-header .form-control,
+#page-clientes .card-header .btn{
+  height: 44px;
+  border-radius: 12px;
+}
+
+/* Botão Buscar consistente */
+#page-clientes .card-header .btn-primary{
+  padding: 0 16px;
+  font-weight: 600;
+}
+
+/* “+ Novo” claro com texto escuro e borda sutil */
+#page-clientes .card-header .btn-light.card-btn{
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(0,0,0,.06);
+  color: #111 !important;
+}
+
+/* Mobile: input ocupa a linha toda; botões lado a lado 50/50 */
+@media (max-width: 576px){
+  #page-clientes .card-header .form-control{
+    flex: 1 1 100%;
+    min-width: 100%;
+  }
+  #page-clientes .card-header .btn{
+    flex: 1 1 calc(50% - 4px);
+    min-width: calc(50% - 4px);
+  }
+}

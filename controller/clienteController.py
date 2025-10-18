@@ -1,6 +1,7 @@
 from math import ceil
 from flask import jsonify, request
 from service.clienteService import clienteService
+from helpers.service_resulte_helper import service_result_to_response
 from utils.api_error import api_error
 
 class clienteController:
@@ -10,7 +11,7 @@ class clienteController:
         if not isinstance(data, dict):
             return api_error(400,"JSON inválido ou ausente.")
         c = clienteService.create_cliente(data)
-        return jsonify(c.to_dict()),201
+        return service_result_to_response(c, key="cliente", created=True, with_children=False)
     
     
     def get_all():
@@ -54,3 +55,19 @@ class clienteController:
             }
         }), 200
     
+    def get_one(id_cliente):
+        res = clienteService.get(id_cliente)
+        if isinstance(res, dict) and res.get("error"):
+            return jsonify(res), res.get("status", 404)
+        return service_result_to_response(res, key="cliente", created=False, with_children=True)
+
+    def update(id_cliente):
+        res = clienteService.update_cliente(id_cliente, request.get_json(force=True) or {})
+        if isinstance(res, dict) and res.get("error"):
+            return jsonify(res), res.get("status", 400)
+        return service_result_to_response(res, key="cliente", created=False, with_children=False)
+
+    def delete(id_cliente):
+        res = clienteService.delete(id_cliente)
+        status = 200 if res.get("deleted") else res.get("status", 400)
+        return jsonify(res), status

@@ -1,7 +1,9 @@
-from datetime import datetime
-from config.db import db
 
-class cliente(db.Model):
+
+from config.db import db
+from model.mixins import TimestampMixin
+
+class cliente(db.Model,TimestampMixin):
 
     __tablename__ = "cliente"
 
@@ -9,8 +11,6 @@ class cliente(db.Model):
     nome = db.Column(db.String(150), nullable= False)
     cpf = db.Column(db.String(30), nullable = True)
     numero = db.Column(db.String(30), nullable= True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     deleted = db.Column(db.Integer, nullable=False, default=False)
 
 

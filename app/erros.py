@@ -10,9 +10,18 @@ class ValidationError(ValueError):
         super().__init__(message)
         self.field = field
 
-def _json_error(error: str, message: str, status: int, **extra):
-    payload = {"error": error, "message": message, "status": status}
-    payload.update({k: v for k, v in extra.items() if v is not None})
+def _json_error(code: str, message: str, status: int, extra=None):
+    payload = {
+        "error": code,
+        "message": message,
+        "status": status,
+    }
+    if extra is not None:
+        # garanta que é serializável
+        try:
+            payload["extra"] = str(extra)
+        except Exception:
+            payload["extra"] = repr(extra)
     return jsonify(payload), status
 
 def register_error_handlers(app):
@@ -35,10 +44,6 @@ def register_error_handlers(app):
 
     # Qualquer outro erro não mapeado
     @app.errorhandler(Exception)
-    def _handle_generic(err: Exception):
-        current_app.logger.exception("Unhandled exception")
-        # Em dev, opcional: expor um id/stack curto
-        if app.debug or app.config.get("EXPOSE_TRACE_IN_ERRORS"):
-            tb = "".join(traceback.format_exception(type(err), err, err.__traceback__))
-            return _json_error("internal_error", "Erro interno do servidor.", 500, trace=tb[-5000:])
-        return _json_error("internal_error", "Erro interno do servidor.", 500)
+    def _handle_generic(err):
+        # antes: return _json_error("internal_error", "Erro interno do servidor.", 500, extra=err)
+        return _json_error("internal_error", "Erro interno do servidor.", 500, extra=str(err))

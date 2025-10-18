@@ -27,10 +27,18 @@ def create_app():
 
     from routes.cliente import cliente_bp
     from routes.veiculo import veiculo_bp
+    from routes.servico import servico_bp
+    from routes.venda import venda_bp
+    from routes.caixa import caixa_bp
+    from routes.routes_front import front_bp
 
     app.register_blueprint(cliente_bp)
     app.register_blueprint(veiculo_bp)
-
+    app.register_blueprint(servico_bp)
+    app.register_blueprint(venda_bp)
+    app.register_blueprint(caixa_bp)
+    app.register_blueprint(front_bp)
+    
     with app.app_context():
         import model
         db.create_all()

@@ -1,5 +1,5 @@
 
-from operator import or_
+from sqlalchemy import or_
 from typing import Optional, Tuple
 from flask import jsonify
 from model.clienteModel import cliente
@@ -38,7 +38,7 @@ class clienteService():
             return app
         except Exception as e:
             from utils.api_error import api_error
-            return api_error(400,"erro ao criar cliente", exc=e)
+            return api_error(400,"erro ao criar cliente", details=e)
     
 
     @staticmethod
@@ -81,15 +81,11 @@ class clienteService():
                 cliente.numero.ilike(like_query),
             ))
 
-        # ordenação determinística (ajuste se preferir por nome, etc.)
         query = query.order_by(cliente.id_cliente.desc())
 
-        # total após filtros (para paginação)
         total = query.count()
 
-        # paginação (opcional)
         if page and per_page:
-            # evita números inválidos
             page = max(1, int(page))
             per_page = max(1, min(int(per_page), 100))
             itens = query.offset((page - 1) * per_page).limit(per_page).all()
@@ -100,5 +96,21 @@ class clienteService():
         
         
 
-    
+    def get(id_cliente: int):
+        obj = cliente.query.get(id_cliente)
+
+        if not obj or obj.deleted != 0:
+            from utils.api_error import api_error
+            return api_error(404, "Cliente não encontrado")
+        return obj
+
+    @staticmethod
+    def delete(id_cliente: int):
+        obj = cliente.query.get(id_cliente)
+        if not obj:
+            from utils.api_error import api_error
+            return api_error(404, "Cliente não encontrado")
+        obj.deleted = id_cliente
+        db.session.commit()
+        return {"deleted": True}
 

@@ -1,7 +1,7 @@
-from datetime import datetime
 from config.db import db
+from model.mixins import TimestampMixin
 
-class veiculo(db.Model):
+class veiculo(db.Model,TimestampMixin):
 
     __tablename__ = "veiculo"
 
@@ -10,8 +10,6 @@ class veiculo(db.Model):
     kilometragem = db.Column(db.Integer, nullable = True)
     placa = db.Column(db.String(20), nullable= False, unique = True)
     observacao = db.Column(db.Text, nullable= True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     deleted = db.Column(db.Integer, nullable=False, default=False)
 
     cliente = db.relationship(

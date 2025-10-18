@@ -1,8 +1,8 @@
-from datetime import datetime
-from config.db import db
-from enums.ROLE import cargos
 
-class funcionario(db.Model):
+from config.db import db
+from model.mixins import TimestampMixin
+
+class funcionario(db.Model,TimestampMixin):
 
     __tablename__ = "funcionarios"
 
@@ -11,8 +11,7 @@ class funcionario(db.Model):
     senha = db.Column(db.String(20), nullable=True)
     salario = db.Column(db.Numeric(10,2), nullable = False)
     is_active = db.Column(db.Boolean, default = True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
     deleted = db.Column(db.Integer, nullable=False, default=False)
 
 

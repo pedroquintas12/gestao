@@ -1,24 +1,21 @@
-# controller/veiculoController.py
 from math import ceil
-from flask import Blueprint, request, jsonify
-from service.veiculoService import veiculoService
+from flask import jsonify, request
 from helpers.service_resulte_helper import service_result_to_response
+from service.servicoService import servicoService
 
-class veiculoController:
+class servicoController:
     
     def create():
-        res = veiculoService.create_veiculo(request.get_json(force=True) or {})
-        if isinstance(res, dict) and res.get("error"):
-            return jsonify(res), res.get("status", 400)
-        return service_result_to_response(res, key="veiculo", created=True, with_children=False)
-
+        data =request.get_json(silent= True)
+        app = servicoService.create_service(data)
+        return service_result_to_response(app, key="servico", created=True)
+    
     def get_all():
         """
-        GET /api/veiculos?q=...&id_cliente=...&page=1&per_page=24
+        GET /api/servicos?q=...&page=1&per_page=24
         """
         args = request.args
         q = args.get("q") or None
-        id_cliente = args.get("id_cliente", type=int) or None
 
         try:
             page = int(args.get("page", 1))
@@ -31,9 +28,8 @@ class veiculoController:
         per_page = max(1, min(per_page, 100))
         page = max(1, page)
 
-        veiculos, total = veiculoService.list_veiculos(
+        servicos, total = servicoService.list_services(
             q=q,
-            id_cliente=id_cliente,
             page=page,
             per_page=per_page,
         )
@@ -43,7 +39,7 @@ class veiculoController:
         has_prev = page > 1
 
         return jsonify({
-            "veiculos": [v.to_dict(with_children=False) for v in veiculos],
+            "servicos": [s.to_dict() for s in servicos],
             "pagination": {
                 "page": page,
                 "per_page": per_page,
@@ -53,21 +49,20 @@ class veiculoController:
                 "has_prev": has_prev,
             }
         }), 200
-
-    def get_one(id_veiculo):
-        res = veiculoService.get(id_veiculo)
+    
+    def get_one(id_servico):
+        res = servicoService.get_service(id_servico)
         if isinstance(res, dict) and res.get("error"):
             return jsonify(res), res.get("status", 404)
-        return service_result_to_response(res, key="veiculo", created=True, with_children=True)
+        return service_result_to_response(res, key="servico", created=False)
 
-    def update(id_veiculo):
-        res = veiculoService.update(id_veiculo, request.get_json(force=True) or {})
+    def update(id_servico):
+        res = servicoService.update_service(id_servico, request.get_json(force=True) or {})
         if isinstance(res, dict) and res.get("error"):
             return jsonify(res), res.get("status", 400)
-        return service_result_to_response(res, key="veiculo", created=True, with_children=False)
+        return service_result_to_response(res, key="servico", created=False)
 
-
-    def delete(id_veiculo):
-        res = veiculoService.delete(id_veiculo)
+    def delete(id_servico):
+        res = servicoService.delete_service(id_servico)
         status = 200 if res.get("deleted") else res.get("status", 400)
         return jsonify(res), status
