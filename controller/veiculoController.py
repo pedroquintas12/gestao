@@ -58,7 +58,7 @@ class veiculoController:
         res = veiculoService.get(id_veiculo)
         if isinstance(res, dict) and res.get("error"):
             return jsonify(res), res.get("status", 404)
-        return service_result_to_response(res, key="veiculo", created=True, with_children=True)
+        return service_result_to_response(res, key="veiculo", created=True, with_children=False)
 
     def update(id_veiculo):
         res = veiculoService.update(id_veiculo, request.get_json(force=True) or {})

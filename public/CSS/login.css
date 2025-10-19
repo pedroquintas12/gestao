@@ -1,0 +1,161 @@
+/* ===== VARIÁVEIS GLOBAIS ===== */
+:root {
+  --bg: #fafafa;
+  --card: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --primary: #FF914D;
+  --primary-600: #ff7d2e;
+  --border-color: #e2e8f0;
+  --radius: 16px;
+  --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== ESTILOS GERAIS ===== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 20px; /* Impede que o card cole nas bordas em telas pequenas */
+  
+  /* --- APLICAÇÃO DA IMAGEM DE FUNDO --- */
+  background-image: url('/public/img/Mascotes.png'); /* <-- MUDE AQUI O CAMINHO PARA SUA IMAGEM */
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: var(--bg); /* Cor de fallback */
+}
+
+/* ===== CAIXA DE LOGIN (EFEITO VIDRO) ===== */
+.login-box {
+  width: 100%;
+  max-width: 420px;
+  padding: 40px;
+  text-align: center;
+  
+  /* --- O EFEITO "VIDRO EMBAÇADO" (GLASSMORPHISM) --- */
+  
+  /* 1. Fundo translúcido (mais opaco para garantir legibilidade) */
+  background-color: rgba(255, 255, 255, 0.85);
+  
+  /* 2. Efeito de desfoque no que está atrás */
+  backdrop-filter: blur(10px);
+  
+  /* 3. Borda sutil para definir o contorno */
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  
+  /* 4. Sombra para dar profundidade */
+  box-shadow: var(--shadow);
+  border-radius: var(--radius);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 28px;
+  margin-bottom: 16px;
+}
+
+.logo .paw {
+  font-size: 24px;
+}
+
+h2 {
+  font-family: 'Poppins', sans-serif;
+  font-size: 24px;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+/* ===== FORMULÁRIO ===== */
+form {
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  text-align: left;
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background-color: rgba(255, 255, 255, 0.5); /* Inputs também um pouco translúcidos */
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(255, 145, 77, 0.3);
+}
+
+button {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+button:hover {
+  background: var(--primary-600);
+}
+
+/* ===== MENSAGEM DE ERRO E LINK DE CADASTRO ===== */
+.msg {
+  text-align: center;
+  margin-top: 16px;
+  color: #ef4444;
+  font-weight: 500;
+  background-color: rgba(255, 200, 200, 0.5);
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.signup-link {
+  margin-top: 24px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.signup-link a {
+  color: var(--primary);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.signup-link a:hover {
+  text-decoration: underline;
+}

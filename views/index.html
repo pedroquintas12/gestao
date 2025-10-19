@@ -1,0 +1,987 @@
+<!doctype html>
+<html lang="pt-br" data-bs-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gestão — Painel</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Seus CSS -->
+  <link rel="stylesheet" href="/public/CSS/style.css">
+  <link rel="stylesheet" href="/public/CSS/admin.css">
+  <link rel="stylesheet" href="/public/CSS/toast.css">
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+  <style>
+    /* pequenos ajustes para o Bootstrap conviver bem com seu design */
+    .sidebar .nav-link{border-radius:8px}
+    .sidebar .nav-link.active{background:var(--primary); color:#fff}
+    .btn-light.card-btn{background:var(--card); box-shadow:var(--shadow); border:0}
+    .btn-light.card-btn:hover{box-shadow:var(--shadow-lg)}
+    .table thead th{font-weight:600; color:var(--muted)}
+    .pagination .page-link{border-radius:8px; margin:0 2px}
+    .badge-rounded{border-radius:999px; padding:.35rem .6rem; font-weight:700; font-size:.75rem}
+    .pill-pay{background:#eef2ff; color:#3730a3}
+    .pill-open{background:#fff7ed; color:#a04b00}
+    .pill-done{background:#ecfdf5; color:#047857}
+    .pill-cancel{background:#fef2f2; color:#b91c1c}
+    /* carrinho simples */
+    .cart-box{background:var(--card); border-radius:16px; box-shadow:var(--shadow); padding:16px}
+    .cart-total{font-family:Poppins, sans-serif; font-size:22px; font-weight:800}
+    .form-inline-gap > *{margin-right:8px}
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside class="sidebar p-3">
+    <div class="sidebar-header d-flex align-items-center justify-content-between">
+      <div class="logo"><span class="paw">G$</span> <span>Gestão</span></div>
+      <button class="btn btn-sm btn-light d-lg-none" id="btnToggleSidebar">☰</button>
+    </div>
+    <nav class="sidebar-nav mt-3" id="sidebar">
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <main class="main-content">
+    <h1 class="title">Painel</h1>
+    <p class="subtitle">Bem-vindo(a)! Gerencie clientes, veículos, serviços e suas vendas.</p>
+
+    <!-- DASHBOARD -->
+    <section class="content-card" id="page-dashboard">
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-title">Vendas hoje</div>
+          <div class="kpi-value" id="kpiVendasHoje">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Total em caixa (hoje)</div>
+          <div class="kpi-value" id="kpiCaixaHoje">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Serviços cadastrados</div>
+          <div class="kpi-value" id="kpiServicos">—</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CLIENTES -->
+    <section class="content-card d-none" id="page-clientes">
+      <div class="card-header">
+        <h2>Clientes</h2>
+        <div class="d-flex gap-2 clients-actions">
+          <input class="form-control" type="search" placeholder="Buscar por nome/cpf/numero" id="cliSearch" style="min-width:260px">
+          <button class="btn btn-primary" id="btnCliBusca">Buscar</button>
+          <button class="btn btn-light card-btn" data-bs-toggle="modal" data-bs-target="#modalCliente">+ Novo</button>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead>
+            <tr><th>#</th><th>Nome</th><th>Telefone</th><th>Ações</th></tr>
+          </thead>
+          <tbody id="cliTable"></tbody>
+        </table>
+      </div>
+      <nav><ul class="pagination" id="cliPag"></ul></nav>
+    </section>
+
+    <!-- VEÍCULOS -->
+    <section class="content-card d-none" id="page-veiculos">
+      <div class="card-header">
+        <h2>Veículos</h2>
+        <div class="d-flex flex-wrap gap-2">
+          <input class="form-control" type="search" placeholder="Buscar por placa" id="veiSearch" style="min-width:220px">
+          <input class="form-control" type="number" placeholder="Id Cliente (opcional)" id="veiCliId" style="max-width:160px">
+          <button class="btn btn-primary" id="btnVeiBusca">Buscar</button>
+          <button class="btn btn-light card-btn" data-bs-toggle="modal" data-bs-target="#modalVeiculo">+ Novo</button>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead>
+            <tr><th>#</th><th>Placa</th><th>Cliente</th><th>KM</th><th>Ações</th></tr>
+          </thead>
+          <tbody id="veiTable"></tbody>
+        </table>
+      </div>
+      <nav><ul class="pagination" id="veiPag"></ul></nav>
+    </section>
+
+    <!-- SERVIÇOS -->
+    <section class="content-card d-none" id="page-servicos">
+      <div class="card-header">
+        <h2>Serviços</h2>
+        <div class="d-flex gap-2">
+          <input class="form-control" type="search" placeholder="Buscar por nome" id="svcSearch" style="min-width:220px">
+          <button class="btn btn-primary" id="btnSvcBusca">Buscar</button>
+          <button class="btn btn-light card-btn" data-bs-toggle="modal" data-bs-target="#modalServico">+ Novo</button>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead>
+            <tr><th>#</th><th>Nome</th><th>Valor (R$)</th><th>Ações</th></tr>
+          </thead>
+          <tbody id="svcTable"></tbody>
+        </table>
+      </div>
+      <nav><ul class="pagination" id="svcPag"></ul></nav>
+    </section>
+
+    <!-- VENDAS / ORÇAMENTOS -->
+    <section class="content-card d-none" id="page-vendas">
+      <div class="card-header">
+        <h2>Vendas / Orçamentos</h2>
+        <div class="d-flex flex-wrap gap-2">
+          <input class="form-control" type="search" placeholder="Buscar (descrição, nome cliente, placa)" id="venSearch" style="min-width:280px">
+          <select class="form-select" id="venFilStatus" style="max-width:180px">
+            <option value="">Status (todos)</option>
+            <option value="EM_ANDAMENTO">Em andamento</option>
+            <option value="FINALIZADA">Finalizada</option>
+            <option value="CANCELADA">Cancelada</option>
+          </select>
+          <select class="form-select" id="venFilPag" style="max-width:180px">
+            <option value="">Pagamento (todos)</option>
+            <option value="PIX">PIX</option>
+            <option value="CARTAO">Cartão</option>
+            <option value="DINHEIRO">Dinheiro</option>
+            <option value="NÃO_PAGO">Não pago</option>
+          </select>
+          <button class="btn btn-primary" id="btnVenBusca">Filtrar</button>
+          <button class="btn btn-light card-btn" data-bs-toggle="modal" data-bs-target="#modalVendaNova">+ Nova</button>
+        </div>
+      </div>
+
+      <!-- LISTAGEM -->
+      <div class="table-responsive mb-4">
+        <table class="table align-middle">
+          <thead><tr><th>#</th><th>Descrição</th><th>Cliente</th><th>Veículo</th><th>Total</th><th>Status</th><th>Pagamento</th><th></th></tr></thead>
+          <tbody id="venTable"></tbody>
+        </table>
+      </div>
+      <nav><ul class="pagination" id="venPag"></ul></nav>
+
+      <!-- CARRINHO / EDIÇÃO DA VENDA SELECIONADA -->
+      <div class="cart-box mt-3 d-none" id="cartBox">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <div>
+            <strong>Venda #</strong><span id="cartVendaId">—</span>
+            <span class="badge-rounded pill-open ms-2" id="cartStatus">EM_ANDAMENTO</span>
+            <span class="badge-rounded pill-pay ms-2" id="cartPag">NÃO_PAGO</span>
+          </div>
+          <div class="cart-total">Total: R$ <span id="cartTotal">0,00</span></div>
+        </div>
+
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-md-5">
+            <label class="form-label">Serviço</label>
+            <select class="form-select" id="cartServico"></select>
+          </div>
+          <div class="col-4 col-md-2">
+            <label class="form-label">Qtd</label>
+            <input type="number" min="1" value="1" class="form-control" id="cartQtd">
+          </div>
+          <div class="col-4 col-md-2">
+            <label class="form-label">Desc. (R$)</label>
+            <input type="number" min="0" step="0.01" value="0" class="form-control" id="cartDesc">
+          </div>
+          <div class="col-4 col-md-3 d-grid">
+            <button class="btn btn-primary" id="btnAddItem">Adicionar item</button>
+          </div>
+        </div>
+
+        <div class="table-responsive mt-3">
+          <table class="table align-middle">
+            <thead><tr><th>Descrição</th><th>Preço</th><th>Qtd</th><th>Desc</th><th>Subtotal</th><th></th></tr></thead>
+            <tbody id="cartItens"></tbody>
+          </table>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 justify-content-end">
+          <select class="form-select" id="cartForma" style="max-width:220px">
+            <option value="PIX">PIX</option>
+            <option value="CARTAO">CARTAO</option>
+            <option value="DINHEIRO">DINHEIRO</option>
+          </select>
+          <button class="btn btn-success" id="btnFinalizar">Finalizar</button>
+          <button class="btn btn-outline-danger" id="btnCancelar">Cancelar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- CAIXA -->
+    <section class="content-card d-none" id="page-caixa">
+      <div class="card-header">
+        <h2>Caixa do dia</h2>
+        <div class="d-flex gap-2">
+          <input type="date" class="form-control" id="cxData" style="min-width:200px">
+          <button class="btn btn-primary" id="btnCxBuscar">Buscar</button>
+        </div>
+      </div>
+      <div class="d-flex align-items-center justify-content-between my-2">
+        <div>Total do período: <strong>R$ <span id="cxTotal">0,00</span></strong></div>
+        <div class="small text-muted" id="cxPeriodoLabel"></div>
+      </div>
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead><tr><th>#</th><th>Venda</th><th>Descrição</th><th>Valor</th><th>Data</th></tr></thead>
+          <tbody id="cxTable"></tbody>
+        </table>
+      </div>
+      <nav><ul class="pagination" id="cxPag"></ul></nav>
+    </section>
+  </main>
+
+  <!-- MODAIS -->
+  <!-- Cliente (novo) -->
+  <div class="modal fade" id="modalCliente" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Novo Cliente</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="mb-2"><label class="form-label">Nome</label><input class="form-control" id="cliNome"></div>
+        <div class="mb-2"><label class="form-label">CPF</label><input class="form-control" id="cliCPF"></div>
+        <div class="mb-2"><label class="form-label">Telefone</label><input class="form-control" id="cliTel"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        <button class="btn btn-primary" id="btnSalvarCliente">Salvar</button>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- Cliente (editar) -->
+  <div class="modal fade" id="modalClienteEdit" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Editar Cliente</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <input type="hidden" id="cliEditId">
+        <div class="mb-2"><label class="form-label">Nome</label><input class="form-control" id="cliEditNome"></div>
+        <div class="mb-2"><label class="form-label">CPF</label><input class="form-control" id="cliEditCPF"></div>
+        <div class="mb-2"><label class="form-label">Telefone</label><input class="form-control" id="cliEditTel"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        <button class="btn btn-primary" id="btnAtualizarCliente">Salvar</button>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- Veículo (novo) -->
+  <div class="modal fade" id="modalVeiculo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Novo Veículo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="mb-2 position-relative">
+          <label class="form-label">Cliente</label>
+          <input class="form-control" id="veiCliNome" placeholder="Digite o nome do cliente" autocomplete="off">
+          <input type="hidden" id="veiCliIdHidden">
+          <div id="veiCliSug" class="list-group position-absolute w-100"
+               style="z-index:1080; max-height:220px; overflow:auto; display:none;"></div>
+        </div>
+        <div class="mb-2"><label class="form-label">Placa</label><input class="form-control" id="veiPlaca"></div>
+        <div class="mb-2"><label class="form-label">KM</label><input type="number" class="form-control" id="veiKM"></div>
+        <div class="mb-2"><label class="form-label">Observação</label><input class="form-control" id="veiObs"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        <button class="btn btn-primary" id="btnSalvarVeiculo">Salvar</button>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- Veículo (editar) -->
+  <div class="modal fade" id="modalVeiculoEdit" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Editar Veículo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <input type="hidden" id="veiEditId">
+        <div class="mb-2"><label class="form-label">Placa</label><input class="form-control" id="veiEditPlaca"></div>
+        <div class="mb-2"><label class="form-label">KM</label><input type="number" class="form-control" id="veiEditKM"></div>
+        <div class="mb-2"><label class="form-label">Observação</label><input class="form-control" id="veiEditObs"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        <button class="btn btn-primary" id="btnAtualizarVeiculo">Salvar</button>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- Serviço (novo) -->
+  <div class="modal fade" id="modalServico" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Novo Serviço</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="mb-2"><label class="form-label">Nome</label><input class="form-control" id="svcNome"></div>
+        <div class="mb-2"><label class="form-label">Valor (R$)</label><input type="number" step="0.01" class="form-control" id="svcValor"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        <button class="btn btn-primary" id="btnSalvarServico">Salvar</button>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- Serviço (editar) -->
+  <div class="modal fade" id="modalServicoEdit" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Editar Serviço</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <input type="hidden" id="svcEditId">
+        <div class="mb-2"><label class="form-label">Nome</label><input class="form-control" id="svcEditNome"></div>
+        <div class="mb-2"><label class="form-label">Valor (R$)</label><input type="number" step="0.01" class="form-control" id="svcEditValor"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        <button class="btn btn-primary" id="btnAtualizarServico">Salvar</button>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- Nova venda -->
+  <div class="modal fade" id="modalVendaNova" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Nova venda / orçamento</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="mb-3 position-relative">
+          <label class="form-label">Cliente</label>
+          <input class="form-control" id="venClienteBusca" placeholder="Digite o nome do cliente" autocomplete="off">
+          <div id="venClienteResultados"
+               class="list-group position-absolute w-100 shadow-sm"
+               style="z-index:1056; max-height:220px; overflow:auto; display:none"></div>
+          <input type="hidden" id="venCli">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Veículo</label>
+          <select class="form-select" id="venVei" disabled>
+            <option value="">Selecione o cliente primeiro…</option>
+          </select>
+        </div>
+
+        <div class="mb-2">
+          <label class="form-label">Descrição</label>
+          <input class="form-control" id="venDesc" placeholder="Ex.: Orc 001">
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        <button class="btn btn-primary" id="btnCriarVenda">Criar</button>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- App JS -->
+  <script>
+    let cliPage=1, cliPer=24, cliQ='';
+    let veiPage=1, veiPer=24, veiQ='', veiCli=null;
+    let svcPage=1, svcPer=24, svcQ='';
+    let venPage=1, venPer=10, venQ='', venStatus='', venPag='';
+    let cxPage=1, cxPer=24, cxDataRef=null;
+    let currentVendaId = null;
+
+    // ===== helpers =====
+    const toastEl = document.getElementById('toast');
+    function showToast(msg, type='success'){
+      toastEl.textContent = msg;
+      toastEl.className = 'toast show ' + (type==='error'?'error':'success');
+      setTimeout(()=>toastEl.classList.remove('show'), 2400);
+    }
+    const money = (v)=> (Number(v||0)).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+    async function api(path, {method='GET', body, params} = {}){
+      const url = new URL(path, window.location.origin);
+      if(params) Object.entries(params).forEach(([k,v])=>{
+        if(v!==undefined && v!==null && v!=='') url.searchParams.set(k,v)
+      });
+      const res = await fetch(url, {
+        method,
+        headers: {'Content-Type':'application/json'},
+        body: body ? JSON.stringify(body) : undefined
+      });
+      const data = await res.json().catch(()=> ({}));
+      if(!res.ok){
+        const msg = data?.error || 'Erro';
+        showToast(msg, 'error');
+        throw new Error(msg);
+      }
+      return data;
+    }
+
+    function renderPagination(container, page, per_page, total, onPage){
+      const total_pages = Math.max(1, Math.ceil(total / per_page));
+      container.innerHTML = '';
+      const ul = container;
+      const add = (p, label, disabled=false, active=false)=>{
+        const li = document.createElement('li');
+        li.className = 'page-item ' + (disabled?'disabled ':'') + (active?'active ':'');
+        const a = document.createElement('a');
+        a.className = 'page-link';
+        a.href = '#';
+        a.textContent = label;
+        a.onclick = (e)=>{e.preventDefault(); if(!disabled && !active) onPage(p)};
+        li.appendChild(a);
+        ul.appendChild(li);
+      };
+      add(page-1,'«', page<=1);
+      for(let i=1; i<=total_pages; i++){
+        if(i===1 || i===total_pages || Math.abs(i-page)<=2){
+          add(i, String(i), false, i===page);
+        }else if(Math.abs(i-page)===3){
+          const li = document.createElement('li');
+          li.className = 'page-item disabled';
+          li.innerHTML = '<span class="page-link">…</span>';
+          ul.appendChild(li);
+        }
+      }
+      add(page+1,'»', page>=total_pages);
+    }
+
+    // ===== roteador simples =====
+    const sections = {
+      dashboard: document.getElementById('page-dashboard'),
+      clientes:  document.getElementById('page-clientes'),
+      veiculos:  document.getElementById('page-veiculos'),
+      servicos:  document.getElementById('page-servicos'),
+      vendas:    document.getElementById('page-vendas'),
+      caixa:     document.getElementById('page-caixa'),
+    };
+    function showPage(hash){
+      const key = (hash||'#dashboard').replace('#','');
+      Object.values(sections).forEach(s=>s.classList.add('d-none'));
+      (sections[key]||sections.dashboard).classList.remove('d-none');
+      document.querySelectorAll('#menu .nav-link').forEach(a=>{
+        a.classList.toggle('active', a.getAttribute('href') === '#'+key);
+      });
+      if(key==='dashboard') loadDashboard();
+      if(key==='clientes')  loadClientes();
+      if(key==='veiculos')  loadVeiculos();
+      if(key==='servicos')  loadServicos();
+      if(key==='vendas')    { loadServicosCombo(); loadVendas(); }
+      if(key==='caixa')     loadCaixa();
+    }
+    window.addEventListener('hashchange', ()=>showPage(location.hash));
+    showPage(location.hash);
+
+    // ===== Dashboard =====
+    async function loadDashboard(){
+      const today = new Date().toISOString().slice(0,10);
+      try{
+        const cx = await api('/api/caixa', {params:{data: today}});
+        document.getElementById('kpiCaixaHoje').textContent = 'R$ '+money(cx.total_valor||cx.total||0);
+
+        const ven = await api('/api/vendas', {params:{page:1, per_page:1, status:'FINALIZADA'}});
+        document.getElementById('kpiVendasHoje').textContent = String(ven.pagination?.total || 0);
+
+        const sv = await api('/api/servicos', {params:{page:1, per_page:1}});
+        document.getElementById('kpiServicos').textContent = String(sv.pagination?.total || 0);
+      }catch{}
+    }
+
+    // ===== Clientes =====
+    async function loadClientes(){
+      const {clientes, pagination} = await api('/api/clientes', {params:{q: cliQ, page: cliPage, per_page: cliPer}});
+      const tbody = document.getElementById('cliTable');
+      tbody.innerHTML = (clientes||[]).map(c=>`
+        <tr>
+          <td>${c.id_cliente}</td>
+          <td>${c.nome||''}</td>
+          <td>${c.numero||''}</td>
+          <td class="actions-col">
+            <button class="btn btn-sm btn-outline-secondary" onclick="openEditCliente(${c.id_cliente})">
+              <i class="bi bi-pencil"></i> Editar
+            </button>
+          </td>
+        </tr>
+      `).join('');
+      renderPagination(document.getElementById('cliPag'), pagination.page, pagination.per_page, pagination.total, (p)=>{cliPage=p; loadClientes();});
+    }
+    document.getElementById('btnCliBusca').onclick = ()=>{ cliQ = document.getElementById('cliSearch').value||''; cliPage=1; loadClientes(); };
+    document.getElementById('btnSalvarCliente').onclick = async ()=>{
+      try{
+        const payload = { nome: cliNome.value, cpf: cliCPF.value, numero: cliTel.value };
+        await api('/api/clientes', {method:'POST', body: payload});
+        showToast('Cliente salvo!');
+        bootstrap.Modal.getInstance(document.getElementById('modalCliente')).hide();
+        loadClientes();
+      }catch{}
+    };
+
+    // ===== Veículos (lista) =====
+    async function loadVeiculos(){
+      const params = {q: veiQ, page: veiPage, per_page: veiPer};
+      if(veiCli) params.id_cliente = veiCli;
+      const {veiculos, pagination} = await api('/api/veiculos', {params});
+      const tbody = document.getElementById('veiTable');
+      tbody.innerHTML = (veiculos||[]).map(v=>`
+        <tr>
+          <td>${v.id_veiculo}</td>
+          <td>${v.placa}</td>
+          <td>${v.id_cliente}</td>
+          <td>${v.km||''}</td>
+          <td class="actions-col">
+            <button class="btn btn-sm btn-outline-secondary" onclick="openEditVeiculo(${v.id_veiculo})">
+              <i class="bi bi-pencil"></i> Editar
+            </button>
+          </td>
+        </tr>
+      `).join('');
+      renderPagination(document.getElementById('veiPag'), pagination.page, pagination.per_page, pagination.total, (p)=>{veiPage=p; loadVeiculos();});
+    }
+    document.getElementById('btnVeiBusca').onclick = ()=>{
+      veiQ   = document.getElementById('veiSearch').value||'';
+      veiCli = document.getElementById('veiCliId').value||null;
+      veiPage=1; loadVeiculos();
+    };
+
+    // ===== Veículo (modal) — busca de cliente por nome (novo veículo) =====
+    let veiCliBuscaTimer = null;
+
+    async function buscarClientesPorNome(term){
+      if(!term || term.trim().length < 2) return [];
+      try{
+        const {clientes} = await api('/api/clientes', {params:{q: term.trim(), page:1, per_page:10}});
+        return clientes||[];
+      }catch{return []}
+    }
+
+    function renderSugestoesClientes(list){
+      const box = document.getElementById('veiCliSug');
+      if(!box) return;
+      if(!list.length){
+        box.style.display='none'; box.innerHTML=''; return;
+      }
+      box.innerHTML = list.map(c=>`
+        <button type="button" class="list-group-item list-group-item-action"
+                data-id="${c.id_cliente}" data-nome="${c.nome||''}">
+          <div class="d-flex justify-content-between">
+            <strong>${c.nome||'-'}</strong><span class="text-muted">#${c.id_cliente}</span>
+          </div>
+          ${c.numero ? `<small class="text-muted">• ${c.numero}</small>` : ''}
+        </button>
+      `).join('');
+      box.style.display='block';
+
+      box.querySelectorAll('.list-group-item').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          document.getElementById('veiCliIdHidden').value = btn.dataset.id;
+          document.getElementById('veiCliNome').value     = btn.dataset.nome;
+          box.style.display='none';
+          box.innerHTML='';
+        });
+      });
+    }
+
+    const veiCliNomeEl = document.getElementById('veiCliNome');
+    const veiCliSugEl  = document.getElementById('veiCliSug');
+
+    veiCliNomeEl?.addEventListener('input', ()=>{
+      document.getElementById('veiCliIdHidden').value = '';
+      clearTimeout(veiCliBuscaTimer);
+      veiCliBuscaTimer = setTimeout(async ()=>{
+        const lista = await buscarClientesPorNome(veiCliNomeEl.value);
+        renderSugestoesClientes(lista);
+      }, 250);
+    });
+
+    document.addEventListener('click', (e)=>{
+      if(!veiCliSugEl) return;
+      const dentro = e.target.closest('#veiCliSug') || e.target.closest('#veiCliNome');
+      if(!dentro){ veiCliSugEl.style.display='none'; }
+    });
+
+    // Salvar veículo (novo)
+    document.getElementById('btnSalvarVeiculo').onclick = async ()=>{
+      try{
+        const id_cliente = Number(document.getElementById('veiCliIdHidden').value || 0);
+        const placa = (document.getElementById('veiPlaca').value || '').trim().toUpperCase();
+        const km = Number(document.getElementById('veiKM').value || 0);
+        const observacao = (document.getElementById('veiObs').value || '').trim();
+
+        if(!id_cliente){ showToast('Selecione um cliente da lista.', 'error'); return; }
+        if(!placa){ showToast('Informe a placa.', 'error'); return; }
+
+        const payload = { id_cliente, placa, km, observacao };
+        await api('/api/veiculos', { method:'POST', body: payload });
+        showToast('Veículo salvo!');
+        bootstrap.Modal.getInstance(document.getElementById('modalVeiculo')).hide();
+
+        document.getElementById('veiCliNome').value = '';
+        document.getElementById('veiCliIdHidden').value = '';
+        document.getElementById('veiPlaca').value = '';
+        document.getElementById('veiKM').value = '';
+        document.getElementById('veiObs').value = '';
+
+        loadVeiculos();
+      }catch(e){
+        console.error('Erro ao salvar veículo:', e);
+        showToast('Erro ao salvar veículo','error');
+      }
+    };
+
+    // ===== Serviços =====
+    async function loadServicos(){
+      const {servicos, pagination} = await api('/api/servicos', {params:{q: svcQ, page: svcPage, per_page: svcPer}});
+      const tbody = document.getElementById('svcTable');
+      tbody.innerHTML = (servicos||[]).map(s=>`
+        <tr>
+          <td>${s.id_servico}</td>
+          <td>${s.nome}</td>
+          <td>${money(s.valor)}</td>
+          <td class="actions-col">
+            <button class="btn btn-sm btn-outline-secondary" onclick="openEditServico(${s.id_servico})">
+              <i class="bi bi-pencil"></i> Editar
+            </button>
+          </td>
+        </tr>
+      `).join('');
+      renderPagination(document.getElementById('svcPag'), pagination.page, pagination.per_page, pagination.total, (p)=>{svcPage=p; loadServicos();});
+    }
+    document.getElementById('btnSvcBusca').onclick = ()=>{ svcQ = document.getElementById('svcSearch').value||''; svcPage=1; loadServicos(); };
+    document.getElementById('btnSalvarServico').onclick = async ()=>{
+      try{
+        const payload = { nome: svcNome.value, valor: Number(svcValor.value||0) };
+        await api('/api/servicos', {method:'POST', body: payload});
+        showToast('Serviço salvo!');
+        bootstrap.Modal.getInstance(document.getElementById('modalServico')).hide();
+        loadServicos(); loadServicosCombo();
+      }catch{}
+    };
+    async function loadServicosCombo(){
+      try{
+        const {servicos} = await api('/api/servicos', {params:{page:1, per_page:200}});
+        const sel = document.getElementById('cartServico');
+        sel.innerHTML = (servicos||[]).map(s=>`<option value="${s.id_servico}" data-preco="${s.valor}">${s.nome} — R$ ${money(s.valor)}</option>`).join('');
+      }catch{}
+    }
+
+    // ===== Vendas / Orçamentos =====
+    function statusPill(s){
+      if(s==='FINALIZADA') return '<span class="badge-rounded pill-completed">FINALIZADA</span>';
+      if(s==='CANCELADA')  return '<span class="badge-rounded pill-cancel">CANCELADA</span>';
+      return '<span class="badge-rounded pill-processed">EM_ANDAMENTO</span>';
+    }
+    async function loadVendas(){
+      const params = {q: venQ, status: venStatus, pagamento: venPag, page: venPage, per_page: venPer};
+      const {vendas, pagination} = await api('/api/vendas', {params});
+      const tbody = document.getElementById('venTable');
+      tbody.innerHTML = (vendas||[]).map(v=>`
+        <tr>
+          <td>${v.id_venda}</td>
+          <td>${v.descricao||'-'}</td>
+          <td>${v.cliente?.nome ?? v.id_cliente}</td>
+          <td>${v.veiculo?.placa ?? v.id_veiculo}</td>
+          <td>R$ ${money(v.total)}</td>
+          <td>${statusPill(v.status)}</td>
+          <td><span class="badge-rounded pill-pay">${v.pagamento}</span></td>
+          <td><button class="btn btn-sm btn-light card-btn" onclick="openCart(${v.id_venda})">Abrir</button></td>
+        </tr>
+      `).join('');
+      renderPagination(document.getElementById('venPag'), pagination.page, pagination.per_page, pagination.total, (p)=>{venPage=p; loadVendas();});
+    }
+    document.getElementById('btnVenBusca').onclick = ()=>{
+      venQ = venSearch.value||''; venStatus = venFilStatus.value||''; venPag = venFilPag.value||'';
+      venPage=1; loadVendas();
+    };
+
+    // ========= Busca Cliente + Veículo (modal de venda) =========
+    function debounce(fn, delay=250){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), delay); }; }
+    const elBuscaCli   = document.getElementById('venClienteBusca');
+    const elResCli     = document.getElementById('venClienteResultados');
+    const elCliHidden  = document.getElementById('venCli');
+    const elVeiSelect  = document.getElementById('venVei');
+    const elDesc       = document.getElementById('venDesc');
+
+    document.getElementById('modalVendaNova').addEventListener('show.bs.modal', ()=>{
+      elBuscaCli.value=''; elCliHidden.value=''; elResCli.style.display='none'; elResCli.innerHTML='';
+      elVeiSelect.innerHTML='<option value="">Selecione o cliente primeiro…</option>'; elVeiSelect.disabled=true;
+      elDesc.value='';
+    });
+
+    const buscarClientes = debounce(async (q)=>{
+      q = (q||'').trim();
+      if(!q || q.length < 2){ elResCli.style.display='none'; elResCli.innerHTML=''; return; }
+      try{
+        const {clientes} = await api('/api/clientes', {params:{q, page:1, per_page:10}});
+        if(!clientes?.length){
+          elResCli.innerHTML='<div class="list-group-item text-muted">Nenhum cliente encontrado</div>';
+          elResCli.style.display='block'; return;
+        }
+        elResCli.innerHTML = clientes.map(c=>`
+          <button type="button" class="list-group-item list-group-item-action"
+                  data-id="${c.id_cliente}" data-nome="${c.nome}">
+            <div class="d-flex justify-content-between">
+              <strong>${c.nome}</strong><small class="text-muted">#${c.id_cliente}</small>
+            </div>
+            <small class="text-muted">${c.numero ? ' • '+c.numero : ''}</small>
+          </button>
+        `).join('');
+        elResCli.style.display='block';
+      }catch{
+        elResCli.style.display='none';
+      }
+    }, 300);
+
+    elBuscaCli.addEventListener('input', e => buscarClientes(e.target.value));
+
+    elResCli.addEventListener('click', async e=>{
+      const btn = e.target.closest('[data-id]');
+      if(!btn) return;
+      const id = Number(btn.dataset.id);
+      const nome = btn.dataset.nome;
+      elCliHidden.value = id;
+      elBuscaCli.value = nome;
+      elResCli.style.display = 'none';
+      await carregarVeiculosDoCliente(id);
+    });
+
+    document.addEventListener('click', e=>{
+      if(!elResCli.contains(e.target) && e.target !== elBuscaCli)
+        elResCli.style.display='none';
+    });
+
+    async function carregarVeiculosDoCliente(id_cliente){
+      elVeiSelect.disabled=true;
+      elVeiSelect.innerHTML='<option>Carregando…</option>';
+      try{
+        const {veiculos} = await api('/api/veiculos', {params:{id_cliente, page:1, per_page:200}});
+        if(!veiculos?.length){
+          elVeiSelect.innerHTML='<option>Cliente sem veículos</option>'; return;
+        }
+        elVeiSelect.innerHTML = veiculos.map(v=>`
+          <option value="${v.id_veiculo}">
+            ${v.placa}${v.km ? ' • '+v.km+' km' : ''}${v.observacao ? ' • '+v.observacao : ''}
+          </option>`).join('');
+        elVeiSelect.disabled=false;
+      }catch{
+        elVeiSelect.innerHTML='<option>Erro ao carregar veículos</option>';
+      }
+    }
+
+    document.getElementById('btnCriarVenda').onclick = async ()=>{
+      try{
+        const id_cliente = Number(elCliHidden.value);
+        const id_veiculo = Number(elVeiSelect.value);
+        const descricao  = elDesc.value || null;
+
+        if(!id_cliente){ showToast('Selecione um cliente válido','error'); return; }
+        if(!id_veiculo){ showToast('Selecione um veículo do cliente','error'); return; }
+
+        const res = await api('/api/vendas', {method:'POST', body:{id_cliente, id_veiculo, descricao}});
+        showToast('Venda criada!');
+        bootstrap.Modal.getInstance(document.getElementById('modalVendaNova')).hide();
+        loadVendas();
+        openCart(res.venda.id_venda);
+      }catch{}
+    };
+
+    // ===== Carrinho =====
+    window.openCart = async (id)=>{
+      currentVendaId = id;
+      const res = await api(`/api/vendas/${id}`);
+      document.getElementById('cartBox').classList.remove('d-none');
+      document.getElementById('cartVendaId').textContent = id;
+      document.getElementById('cartStatus').textContent = res.venda.status;
+      document.getElementById('cartPag').textContent = res.venda.pagamento;
+      document.getElementById('cartTotal').textContent = money(res.venda.total);
+      const tbody = document.getElementById('cartItens');
+      const itens = res.venda.itens || [];
+      tbody.innerHTML = itens.map(it=>`
+        <tr>
+          <td>${it.descricao}</td>
+          <td>R$ ${money(it.preco_unit)}</td>
+          <td>${it.quantidade}</td>
+          <td>R$ ${money(it.desconto)}</td>
+          <td>R$ ${money(it.subtotal)}</td>
+          <td><button class="btn btn-sm btn-outline-danger" onclick="remItem(${id}, ${it.id_item})">Remover</button></td>
+        </tr>
+      `).join('');
+    };
+
+    document.getElementById('btnAddItem').onclick = async ()=>{
+      if(!currentVendaId) return;
+      const id_servico = Number(document.getElementById('cartServico').value);
+      const quantidade = Number(document.getElementById('cartQtd').value||1);
+      const desconto   = Number(document.getElementById('cartDesc').value||0);
+      try{
+        const res = await api(`/api/vendas/${currentVendaId}/itens`, {method:'POST', body:{id_servico, quantidade, desconto}});
+        showToast('Item adicionado');
+        openCart(res.venda.id_venda);
+        loadVendas();
+      }catch{}
+    };
+    window.remItem = async (id_venda, id_item)=>{
+      try{
+        const res = await api(`/api/vendas/${id_venda}/itens/${id_item}`, {method:'DELETE'});
+        showToast('Item removido');
+        openCart(res.venda.id_venda); loadVendas();
+      }catch{}
+    };
+
+    let finishing = false;
+    document.getElementById('btnFinalizar').onclick = async () => {
+      if (!currentVendaId || finishing) return;
+      finishing = true;
+      const btn = document.getElementById('btnFinalizar');
+      btn.disabled = true;
+      try {
+        const forma_pagamento = document.getElementById('cartForma').value;
+        const res = await api(`/api/vendas/${currentVendaId}/finalizar`, { method:'POST', body:{ forma_pagamento }});
+        showToast('Venda finalizada!');
+        openCart(res.venda.id_venda);
+        loadVendas();
+      } catch (e) {
+        console.error(e);
+        showToast('Erro ao finalizar venda', 'error');
+      } finally {
+        finishing = false;
+        btn.disabled = false;
+      }
+    };
+
+    let canceling = false;
+    document.getElementById('btnCancelar').onclick = async () => {
+      if (!currentVendaId || canceling) return;
+      canceling = true;
+      const btn = document.getElementById('btnCancelar');
+      btn.disabled = true;
+      try {
+        const res = await api(`/api/vendas/${currentVendaId}/cancelar`, { method:'POST' });
+        showToast('Venda cancelada');
+        openCart(res.venda.id_venda);
+        loadVendas();
+      } catch (e) {
+        console.error(e);
+        showToast('Erro ao cancelar venda', 'error');
+      } finally {
+        canceling = false;
+        btn.disabled = false;
+      }
+    };
+
+    // ===== Caixa =====
+    async function loadCaixa(){
+      if(!cxDataRef){
+        const today = new Date(); const y = today.toISOString().slice(0,10);
+        document.getElementById('cxData').value = y; cxDataRef = y;
+      }
+      const {lancamentos, pagination, total_valor, total} = await api('/api/caixa', {params:{data: cxDataRef, page: cxPage, per_page: cxPer}});
+      document.getElementById('cxTable').innerHTML = (lancamentos||[]).map(l=>`
+        <tr>
+          <td>${l.venda_id}</td>
+          <td>${l.id_lcto||''}</td>
+          <td>${l.descricao||''}</td>
+          <td>R$ ${money(l.valor)}</td>
+          <td>${l.created_at ? new Date(l.created_at).toLocaleString('pt-BR') : ''}</td>
+        </tr>
+      `).join('');
+      document.getElementById('cxTotal').textContent = money(total_valor||total||0);
+      document.getElementById('cxPeriodoLabel').textContent = cxDataRef;
+      renderPagination(document.getElementById('cxPag'), pagination.page, pagination.per_page, pagination.total, (p)=>{cxPage=p; loadCaixa();});
+    }
+    document.getElementById('btnCxBuscar').onclick = ()=>{ cxDataRef = document.getElementById('cxData').value||null; cxPage=1; loadCaixa(); };
+
+    // ===== ações de UI =====
+    document.getElementById('btnToggleSidebar')?.addEventListener('click', ()=>{
+      document.querySelector('.sidebar').classList.toggle('d-none');
+    });
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el=>{
+      new bootstrap.Tooltip(el);
+    });
+
+    /* ====== EDITAR CLIENTE ====== */
+    window.openEditCliente = async (id)=>{
+      try{
+        const res = await api(`/api/clientes/${id}`);
+        const c = res.cliente || res;
+        document.getElementById('cliEditId').value   = c.id_cliente;
+        document.getElementById('cliEditNome').value = c.nome||'';
+        document.getElementById('cliEditCPF').value  = c.cpf||'';
+        document.getElementById('cliEditTel').value  = c.numero||'';
+        new bootstrap.Modal(document.getElementById('modalClienteEdit')).show();
+      }catch(e){}
+    };
+    document.getElementById('btnAtualizarCliente').onclick = async ()=>{
+      const id = Number(document.getElementById('cliEditId').value);
+      try{
+        const body = {
+          nome:  document.getElementById('cliEditNome').value,
+          cpf:   document.getElementById('cliEditCPF').value,
+          numero:document.getElementById('cliEditTel').value
+        };
+        await api(`/api/clientes/${id}`, {method:'PUT', body});
+        showToast('Cliente atualizado!');
+        bootstrap.Modal.getInstance(document.getElementById('modalClienteEdit')).hide();
+        loadClientes();
+      }catch(e){}
+    };
+
+    /* ====== EDITAR VEÍCULO ====== */
+    window.openEditVeiculo = async (id)=>{
+      try{
+        const res = await api(`/api/veiculos/${id}`);
+        const v = res.veiculo || res;
+        document.getElementById('veiEditId').value     = v.id_veiculo;
+        document.getElementById('veiEditPlaca').value  = v.placa||'';
+        document.getElementById('veiEditKM').value     = v.km||0;
+        document.getElementById('veiEditObs').value    = v.observacao||'';
+        new bootstrap.Modal(document.getElementById('modalVeiculoEdit')).show();
+      }catch(e){}
+    };
+    document.getElementById('btnAtualizarVeiculo').onclick = async ()=>{
+      const id = Number(document.getElementById('veiEditId').value);
+      try{
+        const body = {
+          placa: (document.getElementById('veiEditPlaca').value||'').toUpperCase(),
+          km: Number(document.getElementById('veiEditKM').value||0),
+          observacao: document.getElementById('veiEditObs').value||''
+        };
+        await api(`/api/veiculos/${id}`, {method:'PUT', body});
+        showToast('Veículo atualizado!');
+        bootstrap.Modal.getInstance(document.getElementById('modalVeiculoEdit')).hide();
+        loadVeiculos();
+      }catch(e){}
+    };
+
+    /* ====== EDITAR SERVIÇO ====== */
+    window.openEditServico = async (id)=>{
+      try{
+        const res = await api(`/api/servicos/${id}`);
+        const s = res.servico || res;
+        document.getElementById('svcEditId').value    = s.id_servico;
+        document.getElementById('svcEditNome').value  = s.nome||'';
+        document.getElementById('svcEditValor').value = s.valor||0;
+        new bootstrap.Modal(document.getElementById('modalServicoEdit')).show();
+      }catch(e){}
+    };
+    document.getElementById('btnAtualizarServico').onclick = async ()=>{
+      const id = Number(document.getElementById('svcEditId').value);
+      try{
+        const body = { nome: document.getElementById('svcEditNome').value, valor: Number(document.getElementById('svcEditValor').value||0) };
+        await api(`/api/servicos/${id}`, {method:'PUT', body});
+        showToast('Serviço atualizado!');
+        bootstrap.Modal.getInstance(document.getElementById('modalServicoEdit')).hide();
+        loadServicos(); loadServicosCombo();
+      }catch(e){}
+    };
+  </script>
+</body>
+</html>

@@ -25,12 +25,12 @@ class auth():
             session["is_admin"] = user.is_admin
 
             if user.is_admin:
-                return redirect(url_for("front.adminPage"))
+                return redirect(url_for("front.admin"))
             return redirect(url_for("front.index"))
         except Exception as e:
             print("Erro ao fazer login:", e)
             jsonify({"error": "Erro ao fazer login"}), 500
-            return redirect(url_for("auth.login_form"))
+            return redirect(url_for("auth_bp.login_form"))
         
     @staticmethod
     def me():
@@ -47,7 +47,7 @@ class auth():
     def logout():
         """Remove dados da sessão e volta para a home"""
         session.clear()
-        return redirect(url_for("front.index"))
+        return redirect(url_for("login.html"))
 
     @staticmethod
     def login_form():

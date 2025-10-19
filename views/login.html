@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - PetGo</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Poppins:wght@700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/public/CSS/login.css">
+</head>
+<body>
+
+  <div class="login-box">
+    <div class="logo">
+      <span class="paw"></span> Gestão
+    </div>
+    <h2>Entrar na sua conta</h2>
+    
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="username">E-mail ou username</label>
+        <input type="text" id="username" required placeholder="username">
+      </div>
+
+      <div class="form-group">
+        <label for="password">Senha</label>
+        <input type="password" id="password" required placeholder="••••••••">
+      </div>
+
+      <button type="submit">Entrar</button>
+    </form>
+
+    <div id="msg" class="msg"></div>
+
+  </div>
+  
+  <script src="/public/js/login.js"></script>
+</body>
+</html>

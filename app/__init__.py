@@ -31,6 +31,7 @@ def create_app():
     from routes.venda import venda_bp
     from routes.caixa import caixa_bp
     from routes.routes_front import front_bp
+    from routes.auth import auth_bp
 
     app.register_blueprint(cliente_bp)
     app.register_blueprint(veiculo_bp)
@@ -38,6 +39,8 @@ def create_app():
     app.register_blueprint(venda_bp)
     app.register_blueprint(caixa_bp)
     app.register_blueprint(front_bp)
+    app.register_blueprint(auth_bp)
+
     
     with app.app_context():
         import model

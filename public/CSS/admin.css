@@ -948,3 +948,15 @@ body {
     min-width: calc(50% - 4px);
   }
 }
+
+/* ===== Relatórios (pequenos ajustes visuais) ===== */
+#report-filters .filter-bar { display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom: 0; padding-bottom: 0; border-bottom: 0; }
+#report-filters .filter-input { min-width: 160px; }
+#report-filters .btn { height: 40px; }
+
+#chartTopServicos { width: 100%; min-height: 260px; }
+
+@media (max-width: 576px){
+  #report-filters .filter-bar { gap:10px; }
+  #report-filters .filter-input { flex:1 1 140px; min-width: 0; }
+}
