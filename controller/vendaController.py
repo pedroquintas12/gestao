@@ -1,8 +1,16 @@
 # controller/vendaController.py
+from datetime import date, datetime, time, timedelta
 from math import ceil
 from flask import Blueprint, request, jsonify
 from helpers.service_resulte_helper import service_result_to_response
 from service.vendasService import vendaService
+def _parse_ymd_to_dt(s: str | None):
+    """Converte 'YYYY-MM-DD' -> datetime(YYYY,MM,DD, 00:00:00)."""
+    if not s:
+        return None
+    # aceita apenas 'YYYY-MM-DD'
+    d = date.fromisoformat(s)  # levanta ValueError se formato inválido
+    return datetime.combine(d, time.min)
 
 class vendaController:
 
@@ -14,13 +22,22 @@ class vendaController:
 
     def get_all():
         """
-        GET /api/vendas?q=...&status=...&pagamento=...&page=1&per_page=24
+        GET /api/vendas?q=...&status=...&pagamento=...&start_date=2025-01-01&end_date=2025-01-31&page=1&per_page=24
+        - start_date e end_date são opcionais, formato YYYY-MM-DD
         """
         args = request.args
-        q         = args.get("q") or None              # busca em descricao, cliente.nome, veiculo.placa
-        status    = args.get("status") or None         # ex: EM_ANDAMENTO, FINALIZADA, CANCELADA
-        pagamento = args.get("pagamento") or None      # ex: PIX, DINHEIRO, NAO_PAGO
+        q         = args.get("q") or None
+        status    = args.get("status") or None
+        pagamento = args.get("pagamento") or None
 
+        # datas
+        data_ini = _parse_ymd_to_dt(args.get("start_date"))
+        data_fim = _parse_ymd_to_dt(args.get("end_date"))
+        print(data_fim)
+        # fim exclusivo: < (end_date + 1 dia) para cobrir até 23:59:59 do dia final
+        data_fim_exclusive = (data_fim + timedelta(days=1)) if data_fim else None
+
+        # paginação
         try:
             page = int(args.get("page", 1))
         except ValueError:
@@ -36,6 +53,8 @@ class vendaController:
             q=q,
             status=status,
             pagamento=pagamento,
+            data_ini=data_ini,
+            data_fim_exclusive=data_fim_exclusive,
             page=page,
             per_page=per_page,
         )
@@ -55,7 +74,6 @@ class vendaController:
                 "has_prev": has_prev,
             }
         }), 200
-
     def get_one(id_venda):
         res = vendaService.get(id_venda)
         if isinstance(res, dict) and res.get("error"):

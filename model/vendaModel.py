@@ -39,6 +39,7 @@ class venda(db.Model,TimestampMixin):
             "status": self.status,
             "pagamento": self.pagamento,
             "descricao": self.descricao,
+            "create_at": self.created_at
         }
         if with_children:
             data["cliente"] = self.cliente.to_dict(with_children=False) if self.cliente else None

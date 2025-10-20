@@ -1,6 +1,7 @@
 # services/vendaService.py
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, func, or_, select
 from typing import Optional, Tuple
 from config.db import db
 from utils.api_error import api_error
@@ -14,6 +15,20 @@ from enums.forma_pagamentoEnum import FormaPagamento
 def _num(v):
     try: return float(v)
     except: return 0.0
+
+def _coerce_to_dt_start_of_day(v):
+    """Aceita datetime|date|str|None e devolve datetime na 00:00."""
+    if v is None:
+        return None
+    if isinstance(v, datetime):
+        return v
+    if isinstance(v, date):
+        return datetime.combine(v, time.min)
+    if isinstance(v, str):
+        # espera 'YYYY-MM-DD'
+        d = date.fromisoformat(v)
+        return datetime.combine(d, time.min)
+    raise TypeError(f"Tipo de data não suportado: {type(v)}")
 
 
 class vendaService:
@@ -156,41 +171,76 @@ class vendaService:
         db.session.commit()
         return v
 
+   
     @staticmethod
-
     def list_vendas(
         q: Optional[str] = None,
         status: Optional[str] = None,
         pagamento: Optional[str] = None,
+        data_ini: Optional[datetime] = None,            # inclusive (>=)
+        data_fim_exclusive: Optional[datetime] = None,  # exclusivo (<)
         page: Optional[int] = 1,
         per_page: Optional[int] = 24
     ) -> Tuple[list, int]:
-        # join para permitir busca por nome do cliente / placa do veículo
-        query = db.session.query(Venda).join(Cliente, Venda.id_cliente == Cliente.id_cliente)\
-                                       .join(Veiculo, Venda.id_veiculo == Veiculo.id_veiculo)
+        data_ini = _coerce_to_dt_start_of_day(data_ini)
+        data_fim_exclusive = _coerce_to_dt_start_of_day(data_fim_exclusive)
+
+        base = (
+            db.session.query(Venda.id_venda)
+            .join(Cliente, Venda.id_cliente == Cliente.id_cliente)
+            .join(Veiculo, Venda.id_veiculo == Veiculo.id_veiculo)
+        )
 
         if status:
-            query = query.filter(Venda.status == status)
+            base = base.filter(Venda.status == status)
         if pagamento:
-            query = query.filter(Venda.pagamento == pagamento)
+            base = base.filter(Venda.pagamento == pagamento)
 
         if q:
             like = f"%{q.strip()}%"
-            query = query.filter(or_(
+            base = base.filter(or_(
                 Venda.descricao.ilike(like),
                 Cliente.nome.ilike(like),
                 Veiculo.placa.ilike(like),
             ))
 
-        query = query.order_by(Venda.id_venda.desc())
-        total = query.count()
+        # --- filtro de período com fim exclusivo ---
+        if data_ini and data_fim_exclusive:
+            base = base.filter(Venda.created_at >= data_ini,
+                            Venda.created_at <  data_fim_exclusive)
+        elif data_ini:
+            prox = data_ini + timedelta(days=1)
+            base = base.filter(Venda.created_at >= data_ini,
+                            Venda.created_at <  prox)
+        elif data_fim_exclusive:
+            base = base.filter(Venda.created_at < data_fim_exclusive)
 
+        # --- ids únicos + contagem coerente ---
+        base = base.distinct().order_by(Venda.id_venda.desc())
+        subq = base.subquery()
+        total = db.session.query(func.count()).select_from(subq).scalar()
+
+        # paginação nos ids distintos
         if page and per_page:
             page = max(1, int(page))
             per_page = max(1, min(int(per_page), 100))
-            itens = query.offset((page - 1) * per_page).limit(per_page).all()
+            ids_rows = (db.session.query(subq.c.id_venda)
+                        .order_by(subq.c.id_venda.desc())
+                        .offset((page - 1) * per_page)
+                        .limit(per_page)
+                        .all())
         else:
-            itens = query.all()
+            ids_rows = (db.session.query(subq.c.id_venda)
+                        .order_by(subq.c.id_venda.desc())
+                        .all())
+
+        ids = [r[0] for r in ids_rows]
+        itens = []
+        if ids:
+            itens = (db.session.query(Venda)
+                    .filter(Venda.id_venda.in_(ids))
+                    .order_by(Venda.id_venda.desc())
+                    .all())
 
         return itens, total
 
