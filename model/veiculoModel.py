@@ -7,6 +7,9 @@ class veiculo(db.Model,TimestampMixin):
 
     id_veiculo = db.Column(db.Integer, primary_key= True, autoincrement= True)
     id_cliente = db.Column(db.Integer, db.ForeignKey("cliente.id_cliente"), nullable=False)
+    marca = db.Column(db.String(50), nullable = True)
+    modelo = db.Column(db.String(50), nullable = True)
+    cor = db.Column(db.String(30), nullable = True)
     kilometragem = db.Column(db.Integer, nullable = True)
     placa = db.Column(db.String(20), nullable= False, unique = True)
     observacao = db.Column(db.Text, nullable= True)
@@ -27,6 +30,9 @@ class veiculo(db.Model,TimestampMixin):
         "km":self.kilometragem,
         "placa": self.placa,
         "obs": self.observacao,
+        "marca": self.marca,
+        "modelo": self.modelo,
+        "cor": self.cor
         }
         if with_children:
             data["cliente"] =  [c.to_dict() for c in getattr(self, "cliente", [])]

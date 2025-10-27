@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cadastrar Empresa</title>
+
+  <link rel="stylesheet" href="/public/CSS/companie.css">
+
+</head>
+<body>
+  <main class="page-wrapper">
+    <section class="card">
+      <h1 class="card-title">Cadastrar Empresa</h1>
+
+      <!-- feedback visual -->
+      <div id="toast" class="toast"></div>
+
+      <form id="companie-form">
+        <div class="form-grid">
+
+          <div class="form-field">
+            <label for="nome">Nome da Empresa <span class="req">*</span></label>
+            <input type="text" id="nome" name="nome" required placeholder="Ex: SprayWash Matriz"/>
+            <small class="err" data-err="nome"></small>
+          </div>
+
+          <div class="form-field">
+            <label for="cnpj">CNPJ</label>
+            <input type="text" id="cnpj" name="cnpj" placeholder="00.000.000/0000-00"/>
+            <small class="err" data-err="cnpj"></small>
+          </div>
+
+          <div class="form-field">
+            <label for="endereco">Endereço</label>
+            <input type="text" id="endereco" name="endereco" placeholder="Rua Exemplo, Bairro..."/>
+            <small class="err" data-err="endereco"></small>
+          </div>
+
+          <div class="form-field">
+            <label for="numero">Número</label>
+            <input type="text" id="numero" name="numero" placeholder="155"/>
+            <small class="err" data-err="numero"></small>
+          </div>
+
+          <div class="form-field">
+            <label for="imagem">Logo / Foto</label>
+            <input type="file" id="imagem" name="imagem" accept="image/*" />
+            <small class="err" data-err="imagem"></small>
+
+            <div class="preview-wrapper">
+              <img id="preview-img" alt="Preview da imagem" />
+              <div id="preview-empty">Nenhuma imagem selecionada</div>
+            </div>
+
+            <div class="hint">
+              Máx 10 MB. Aceita JPG, PNG etc.
+            </div>
+          </div>
+
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn-primary">Salvar</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">Buscar Empresa</h2>
+
+      <form id="search-form" class="search-row">
+        <input type="number" id="search-id" min="1" placeholder="ID da empresa" />
+        <button type="submit" class="btn-secondary">Buscar</button>
+      </form>
+
+      <pre id="result-box" class="result-box"></pre>
+    </section>
+  </main>
+
+  <script src="/public/js/companias.js"></script>
+</body>
+</html>

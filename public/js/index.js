@@ -150,6 +150,8 @@
           <td>${v.id_veiculo}</td>
           <td>${v.placa}</td>
           <td>${v.id_cliente}</td>
+          <td>${v.marca||''}</td>
+          <td>${v.modelo||''}</td>
           <td>${v.km||''}</td>
           <td class="actions-col">
             <button class="btn btn-sm btn-outline-secondary" onclick="openEditVeiculo(${v.id_veiculo})">
@@ -229,11 +231,15 @@
         const placa = (document.getElementById('veiPlaca').value || '').trim().toUpperCase();
         const km = Number(document.getElementById('veiKM').value || 0);
         const observacao = (document.getElementById('veiObs').value || '').trim();
+        const marca = (document.getElementById('veiMarca').value || '').trim();
+        const modelo = (document.getElementById('veiModel').value || '').trim();
+        const cor = (document.getElementById('veiCor').value || '').trim();
 
         if(!id_cliente){ showToast('Selecione um cliente da lista.', 'error'); return; }
         if(!placa){ showToast('Informe a placa.', 'error'); return; }
 
-        const payload = { id_cliente, placa, km, observacao };
+        const payload = { id_cliente, placa, km, observacao,marca,modelo,cor };
+        console.log(payload);
         await api('/api/veiculos', { method:'POST', body: payload });
         showToast('Veículo salvo!');
         bootstrap.Modal.getInstance(document.getElementById('modalVeiculo')).hide();
@@ -242,6 +248,9 @@
         document.getElementById('veiCliIdHidden').value = '';
         document.getElementById('veiPlaca').value = '';
         document.getElementById('veiKM').value = '';
+        document.getElementById('veiCor').value = '';
+        document.getElementById('veiModel').value = '';
+        document.getElementById('veiMarca').value = '';
         document.getElementById('veiObs').value = '';
 
         loadVeiculos();
@@ -557,6 +566,9 @@
         document.getElementById('veiEditPlaca').value  = v.placa||'';
         document.getElementById('veiEditKM').value     = v.km||0;
         document.getElementById('veiEditObs').value    = v.observacao||'';
+        document.getElementById('veiEditMarca').value    = v.observacao||'';
+        document.getElementById('veiEditModel').value    = v.observacao||'';
+        document.getElementById('veiEditCor').value    = v.observacao||'';
         new bootstrap.Modal(document.getElementById('modalVeiculoEdit')).show();
       }catch(e){}
     };
@@ -566,8 +578,12 @@
         const body = {
           placa: (document.getElementById('veiEditPlaca').value||'').toUpperCase(),
           km: Number(document.getElementById('veiEditKM').value||0),
-          observacao: document.getElementById('veiEditObs').value||''
+          observacao: document.getElementById('veiEditObs').value||'',
+          marca: document.getElementById('veiEditMarca').value||'',
+          modelo: document.getElementById('veiEditModel').value||'',
+          cor: document.getElementById('veiEditCor').value||''
         };
+        console.log(body);
         await api(`/api/veiculos/${id}`, {method:'PUT', body});
         showToast('Veículo atualizado!');
         bootstrap.Modal.getInstance(document.getElementById('modalVeiculoEdit')).hide();

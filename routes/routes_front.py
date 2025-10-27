@@ -9,3 +9,7 @@ def index():
 @front_bp.route('/admin')
 def admin():
     return render_template('admin.html')
+
+@front_bp.route('/cadastroCompanie')
+def cadastro_companie():
+    return render_template('cadastroCompanie.html')

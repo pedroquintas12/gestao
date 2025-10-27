@@ -26,6 +26,9 @@ class veiculoService:
                 "id_cliente": id_cliente,
                 "placa":placa,
                 "observacao":observacao,
+                "marca":data.get('marca'),
+                "modelo":data.get('modelo'),
+                "cor":data.get('cor'),
                 "kilometragem":kilometragem
             })
             return out, err
@@ -40,6 +43,7 @@ class veiculoService:
              return api_error (400,"veiculo ja existente")
         
         payload,err = veiculoService.valid_payload(data)
+        print(payload,err)
         if err:
              from utils.api_error import api_error
              return api_error(400, "erro ao validar", err)
@@ -90,12 +94,14 @@ class veiculoService:
         if not obj or obj.deleted:
             from utils.api_error import api_error
             return api_error(404, "Veículo não encontrado")
-
         merged = {
             "id_cliente": obj.id_cliente,
             "placa": obj.placa,
             "kilometragem": obj.kilometragem,
             "observacao": obj.observacao,
+            "marca": obj.marca,
+            "modelo": obj.modelo,
+            "cor": obj.cor,
             **(data or {})
         }
         payload, err = veiculoService.valid_payload(merged)
@@ -110,6 +116,9 @@ class veiculoService:
         obj.placa       = payload["placa"]
         obj.kilometragem= payload.get("kilometragem")
         obj.observacao  = payload.get("observacao")
+        obj.marca       = payload.get("marca")
+        obj.modelo      = payload.get("modelo")
+        obj.cor         = payload.get("cor")
         db.session.commit()
         return obj
 
