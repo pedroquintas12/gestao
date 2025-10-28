@@ -22,8 +22,8 @@ class vendaController:
 
     def get_all():
         """
-        GET /api/vendas?q=...&status=...&pagamento=...&start_date=2025-01-01&end_date=2025-01-31&page=1&per_page=24
-        - start_date e end_date são opcionais, formato YYYY-MM-DD
+        GET /api/vendas?q=...&status=...&pagamento=...&data_ini=2025-01-01&data_fim=2025-01-31&page=1&per_page=24
+        - data_ini e data_fim são opcionais, formato YYYY-MM-DD
         """
         args = request.args
         q         = args.get("q") or None
@@ -31,9 +31,8 @@ class vendaController:
         pagamento = args.get("pagamento") or None
 
         # datas
-        data_ini = _parse_ymd_to_dt(args.get("start_date"))
-        data_fim = _parse_ymd_to_dt(args.get("end_date"))
-        print(data_fim)
+        data_ini = _parse_ymd_to_dt(args.get("data_ini"))
+        data_fim = _parse_ymd_to_dt(args.get("data_fim"))
         # fim exclusivo: < (end_date + 1 dia) para cobrir até 23:59:59 do dia final
         data_fim_exclusive = (data_fim + timedelta(days=1)) if data_fim else None
 
@@ -109,3 +108,8 @@ class vendaController:
         if isinstance(res, dict) and res.get("error"):
             return jsonify(res), res.get("status", 400)
         return service_result_to_response(res, key="venda", created=False, with_children=True)
+    def baixar_orcamento_pdf(orc_id):
+        res = vendaService.baixar_orcamento_pdf(orc_id)
+        if isinstance(res, dict) and res.get("error"):
+            return jsonify(res), res.get("status", 400)
+        return res

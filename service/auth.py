@@ -47,7 +47,7 @@ class auth():
     def logout():
         """Remove dados da sessão e volta para a home"""
         session.clear()
-        return redirect(url_for("login.html"))
+        return redirect(url_for("auth_bp.login_form"))
 
     @staticmethod
     def login_form():

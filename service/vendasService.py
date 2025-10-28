@@ -1,9 +1,11 @@
 # services/vendaService.py
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
+from flask import make_response
 from sqlalchemy import and_, func, or_, select
 from typing import Optional, Tuple
 from config.db import db
+from model.companieModel import companie
 from utils.api_error import api_error
 from model.vendaModel import venda as Venda, VendaItem
 from model.servicoModel import servico as Servico
@@ -204,6 +206,8 @@ class vendaService:
                 Veiculo.placa.ilike(like),
             ))
 
+        print(data_ini, data_fim_exclusive)
+
         # --- filtro de período com fim exclusivo ---
         if data_ini and data_fim_exclusive:
             base = base.filter(Venda.created_at >= data_ini,
@@ -312,14 +316,12 @@ class vendaService:
                 valor = Decimal(str(v.total or 0))
 
                 if cx:
-                    cx.valor = valor
-                    if descricao:
-                        cx.descricao = descricao
+                    cx.valor = valor 
                 else:
                     db.session.add(Caixa(
                         venda_id=v.id_venda,
                         valor=valor,
-                        descricao=descricao or f"VENDA #{v.id_venda}"
+                        descricao= descricao or f"VENDA #{v.id_venda}"
                     ))
 
             return v
@@ -351,3 +353,39 @@ class vendaService:
             return api_error(500, f"Falha ao cancelar venda: {e}")
 
 
+    @staticmethod
+    def baixar_orcamento_pdf(orc_id: int):
+        from service.createOrcamento import gerar_pdf_orcamento_venda_reportlab
+        from flask import make_response
+        from utils.api_error import api_error
+        from config.db import db
+        from model.companieModel import companie as Companie
+        from model.vendaModel import venda as Venda
+        # se já tiver esses imports fora, não precisa repetir
+
+        empresa = Companie.query.get(1)
+        if not empresa:
+            return api_error(404, "Empresa não encontrada")
+
+        venda_obj = Venda.query.get(orc_id)
+        if not venda_obj:
+            return api_error(404, "Orçamento (venda) não encontrado")
+
+        # garante que relações lazy já estejam carregadas
+        db.session.refresh(venda_obj)
+
+        try:
+            pdf_bytes = gerar_pdf_orcamento_venda_reportlab(
+                companie_obj=empresa,
+                venda_obj=venda_obj,
+                validade_orcamento="7 dias",
+                observacoes_finais="Obrigado pela preferência.",
+            )
+        except Exception as e:
+            print("ERRO PDF:", e)
+            return api_error(500, f"Erro ao gerar PDF: {e}")
+
+        resp = make_response(pdf_bytes)
+        resp.headers["Content-Type"] = "application/pdf"
+        resp.headers["Content-Disposition"] = f'attachment; filename="orcamento_{orc_id:04d}.pdf"'
+        return resp

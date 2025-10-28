@@ -8,48 +8,80 @@
   <!-- Bootstrap 5 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-  <!-- Seus CSS -->
-  <link rel="stylesheet" href="/public/CSS/style.css">
-  <link rel="stylesheet" href="/public/CSS/admin.css">
-  <link rel="stylesheet" href="/public/CSS/toast.css">
-
-  <!-- Fonts & Icons -->
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;800&display=swap" rel="stylesheet">
+  <!-- Bootstrap Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
-  <style>
-    /* pequenos ajustes para o Bootstrap conviver bem com seu design */
-    .sidebar .nav-link{border-radius:8px}
-    .sidebar .nav-link.active{background:var(--primary); color:#fff}
-    .btn-light.card-btn{background:var(--card); box-shadow:var(--shadow); border:0}
-    .btn-light.card-btn:hover{box-shadow:var(--shadow-lg)}
-    .table thead th{font-weight:600; color:var(--muted)}
-    .pagination .page-link{border-radius:8px; margin:0 2px}
-    .badge-rounded{border-radius:999px; padding:.35rem .6rem; font-weight:700; font-size:.75rem}
-    .pill-pay{background:#eef2ff; color:#3730a3}
-    .pill-open{background:#fff7ed; color:#a04b00}
-    .pill-done{background:#ecfdf5; color:#047857}
-    .pill-cancel{background:#fef2f2; color:#b91c1c}
-    /* carrinho simples */
-    .cart-box{background:var(--card); border-radius:16px; box-shadow:var(--shadow); padding:16px}
-    .cart-total{font-family:Poppins, sans-serif; font-size:22px; font-weight:800}
-    .form-inline-gap > *{margin-right:8px}
-  </style>
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;800&display=swap" rel="stylesheet">
+
+  <!-- App styles -->
+  <link rel="stylesheet" href="/public/CSS/style.css">
+  <link rel="stylesheet" href="/public/CSS/admin.css">
 </head>
 <body>
 
-  <!-- Sidebar -->
+  <!-- SIDEBAR -->
   <aside class="sidebar p-3">
     <div class="sidebar-header d-flex align-items-center justify-content-between">
-      <div class="logo"><span class="paw">G$</span> <span>Gestão</span></div>
-      <button class="btn btn-sm btn-light d-lg-none" id="btnToggleSidebar">☰</button>
+      <div class="logo">
+        <span class="paw">G$</span>
+        <span class="logo-text">Gestão</span>
+      </div>
+      <button class="btn btn-sm btn-light d-lg-none" id="btnToggleSidebar" aria-label="Alternar menu">
+        <i class="bi bi-list"></i>
+      </button>
     </div>
+
     <nav class="sidebar-nav mt-3" id="sidebar">
+      <ul id="menu" class="list-unstyled m-0 p-0">
+        <li>
+          <a href="#dashboard" class="nav-link active">
+            <i class="bi bi-speedometer2"></i>
+            <span class="label">Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a href="#clientes" class="nav-link">
+            <i class="bi bi-people"></i>
+            <span class="label">Clientes</span>
+          </a>
+        </li>
+        <li>
+          <a href="#veiculos" class="nav-link">
+            <i class="bi bi-car-front"></i>
+            <span class="label">Veículos</span>
+          </a>
+        </li>
+        <li>
+          <a href="#servicos" class="nav-link">
+            <i class="bi bi-wrench-adjustable"></i>
+            <span class="label">Serviços</span>
+          </a>
+        </li>
+        <li>
+          <a href="#vendas" class="nav-link">
+            <i class="bi bi-receipt"></i>
+            <span class="label">Vendas / Orçamentos</span>
+          </a>
+        </li>
+        <li>
+          <a href="#caixa" class="nav-link">
+            <i class="bi bi-cash-coin"></i>
+            <span class="label">Caixa do dia</span>
+          </a>
+        </li>
+        <li class="mt-3 border-top pt-3">
+          <a href="/logout" class="nav-link text-danger">
+            <i class="bi bi-box-arrow-right"></i>
+            <span class="label">Sair</span>
+          </a>
+        </li>
+      </ul>
     </nav>
   </aside>
 
-  <!-- Main -->
+  <!-- MAIN AREA -->
   <main class="main-content">
     <h1 class="title">Painel</h1>
     <p class="subtitle">Bem-vindo(a)! Gerencie clientes, veículos, serviços e suas vendas.</p>
@@ -76,21 +108,30 @@
     <section class="content-card d-none" id="page-clientes">
       <div class="card-header">
         <h2>Clientes</h2>
-        <div class="d-flex gap-2 clients-actions">
+        <div class="d-flex gap-2 flex-wrap clients-actions">
           <input class="form-control" type="search" placeholder="Buscar por nome/cpf/numero" id="cliSearch" style="min-width:260px">
           <button class="btn btn-primary" id="btnCliBusca">Buscar</button>
           <button class="btn btn-light card-btn" data-bs-toggle="modal" data-bs-target="#modalCliente">+ Novo</button>
         </div>
       </div>
+
       <div class="table-responsive">
         <table class="table align-middle">
           <thead>
-            <tr><th>#</th><th>Nome</th><th>Telefone</th><th>Ações</th></tr>
+            <tr>
+              <th>#</th>
+              <th>Nome</th>
+              <th>Telefone</th>
+              <th>Ações</th>
+            </tr>
           </thead>
           <tbody id="cliTable"></tbody>
         </table>
       </div>
-      <nav><ul class="pagination" id="cliPag"></ul></nav>
+
+      <nav>
+        <ul class="pagination" id="cliPag"></ul>
+      </nav>
     </section>
 
     <!-- VEÍCULOS -->
@@ -104,50 +145,73 @@
           <button class="btn btn-light card-btn" data-bs-toggle="modal" data-bs-target="#modalVeiculo">+ Novo</button>
         </div>
       </div>
+
       <div class="table-responsive">
         <table class="table align-middle">
           <thead>
-            <tr><th>#</th><th>Placa</th><th>Cliente</th><th>Marca</th><th>Modelo</th><th>KM</th><th>Ações</th></tr>
+            <tr>
+              <th>#</th>
+              <th>Placa</th>
+              <th>Cliente</th>
+              <th>Marca</th>
+              <th>Modelo</th>
+              <th>KM</th>
+              <th>Ações</th>
+            </tr>
           </thead>
           <tbody id="veiTable"></tbody>
         </table>
       </div>
-      <nav><ul class="pagination" id="veiPag"></ul></nav>
+
+      <nav>
+        <ul class="pagination" id="veiPag"></ul>
+      </nav>
     </section>
 
     <!-- SERVIÇOS -->
     <section class="content-card d-none" id="page-servicos">
       <div class="card-header">
         <h2>Serviços</h2>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-wrap">
           <input class="form-control" type="search" placeholder="Buscar por nome" id="svcSearch" style="min-width:220px">
           <button class="btn btn-primary" id="btnSvcBusca">Buscar</button>
           <button class="btn btn-light card-btn" data-bs-toggle="modal" data-bs-target="#modalServico">+ Novo</button>
         </div>
       </div>
+
       <div class="table-responsive">
         <table class="table align-middle">
           <thead>
-            <tr><th>#</th><th>Nome</th><th>Valor (R$)</th><th>Ações</th></tr>
+            <tr>
+              <th>#</th>
+              <th>Nome</th>
+              <th>Valor (R$)</th>
+              <th>Ações</th>
+            </tr>
           </thead>
           <tbody id="svcTable"></tbody>
         </table>
       </div>
-      <nav><ul class="pagination" id="svcPag"></ul></nav>
+
+      <nav>
+        <ul class="pagination" id="svcPag"></ul>
+      </nav>
     </section>
 
     <!-- VENDAS / ORÇAMENTOS -->
     <section class="content-card d-none" id="page-vendas">
       <div class="card-header">
         <h2>Vendas / Orçamentos</h2>
-        <div class="d-flex flex-wrap gap-2">
-          <input class="form-control" type="search" placeholder="Buscar (descrição, nome cliente, placa)" id="venSearch" style="min-width:280px">
+        <div class="d-flex flex-wrap gap-2 align-items-start">
+          <input class="form-control" type="search" placeholder="Buscar (descrição, nome cliente, placa)" id="venSearch" style="min-width:220px">
+
           <select class="form-select" id="venFilStatus" style="max-width:180px">
             <option value="">Status (todos)</option>
             <option value="EM_ANDAMENTO">Em andamento</option>
             <option value="FINALIZADA">Finalizada</option>
             <option value="CANCELADA">Cancelada</option>
           </select>
+
           <select class="form-select" id="venFilPag" style="max-width:180px">
             <option value="">Pagamento (todos)</option>
             <option value="PIX">PIX</option>
@@ -155,241 +219,415 @@
             <option value="DINHEIRO">Dinheiro</option>
             <option value="NÃO_PAGO">Não pago</option>
           </select>
+
+          <!-- NOVOS CAMPOS DE DATA -->
+          <input class="form-control" type="date" id="venDataIni" style="max-width:180px">
+          <input class="form-control" type="date" id="venDataFim" style="max-width:180px">
+
           <button class="btn btn-primary" id="btnVenBusca">Filtrar</button>
           <button class="btn btn-light card-btn" data-bs-toggle="modal" data-bs-target="#modalVendaNova">+ Nova</button>
         </div>
       </div>
 
-      <!-- LISTAGEM -->
       <div class="table-responsive mb-4">
         <table class="table align-middle">
-          <thead><tr><th>#</th><th>Descrição</th><th>Cliente</th><th>Veículo</th><th>Total</th><th>Status</th><th>Pagamento</th><th></th></tr></thead>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Descrição</th>
+              <th>Cliente</th>
+              <th>Veículo</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Pagamento</th>
+              <th></th>
+            </tr>
+          </thead>
           <tbody id="venTable"></tbody>
         </table>
       </div>
-      <nav><ul class="pagination" id="venPag"></ul></nav>
 
-      <!-- CARRINHO / EDIÇÃO DA VENDA SELECIONADA -->
-      <div class="cart-box mt-3 d-none" id="cartBox">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <div>
-            <strong>Venda #</strong><span id="cartVendaId">—</span>
-            <span class="badge-rounded pill-open ms-2" id="cartStatus">EM_ANDAMENTO</span>
-            <span class="badge-rounded pill-pay ms-2" id="cartPag">NÃO_PAGO</span>
-          </div>
-          <div class="cart-total">Total: R$ <span id="cartTotal">0,00</span></div>
-        </div>
-
-        <div class="row g-2 align-items-end">
-          <div class="col-12 col-md-5">
-            <label class="form-label">Serviço</label>
-            <select class="form-select" id="cartServico"></select>
-          </div>
-          <div class="col-4 col-md-2">
-            <label class="form-label">Qtd</label>
-            <input type="number" min="1" value="1" class="form-control" id="cartQtd">
-          </div>
-          <div class="col-4 col-md-2">
-            <label class="form-label">Desc. (R$)</label>
-            <input type="number" min="0" step="0.01" value="0" class="form-control" id="cartDesc">
-          </div>
-          <div class="col-4 col-md-3 d-grid">
-            <button class="btn btn-primary" id="btnAddItem">Adicionar item</button>
-          </div>
-        </div>
-
-        <div class="table-responsive mt-3">
-          <table class="table align-middle">
-            <thead><tr><th>Descrição</th><th>Preço</th><th>Qtd</th><th>Desc</th><th>Subtotal</th><th></th></tr></thead>
-            <tbody id="cartItens"></tbody>
-          </table>
-        </div>
-
-        <div class="d-flex flex-wrap gap-2 justify-content-end">
-          <select class="form-select" id="cartForma" style="max-width:220px">
-            <option value="PIX">PIX</option>
-            <option value="CARTAO">CARTAO</option>
-            <option value="DINHEIRO">DINHEIRO</option>
-          </select>
-          <button class="btn btn-success" id="btnFinalizar">Finalizar</button>
-          <button class="btn btn-outline-danger" id="btnCancelar">Cancelar</button>
-        </div>
-      </div>
+      <nav>
+        <ul class="pagination" id="venPag"></ul>
+      </nav>
     </section>
 
     <!-- CAIXA -->
     <section class="content-card d-none" id="page-caixa">
       <div class="card-header">
         <h2>Caixa do dia</h2>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-wrap align-items-start">
           <input type="date" class="form-control" id="cxData" style="min-width:200px">
           <button class="btn btn-primary" id="btnCxBuscar">Buscar</button>
         </div>
       </div>
-      <div class="d-flex align-items-center justify-content-between my-2">
+
+      <div class="d-flex align-items-center justify-content-between my-2 flex-wrap gap-2">
         <div>Total do período: <strong>R$ <span id="cxTotal">0,00</span></strong></div>
         <div class="small text-muted" id="cxPeriodoLabel"></div>
       </div>
+
       <div class="table-responsive">
         <table class="table align-middle">
-          <thead><tr><th>#</th><th>Venda</th><th>Descrição</th><th>Valor</th><th>Data</th></tr></thead>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Venda</th>
+              <th>Descrição</th>
+              <th>Valor</th>
+              <th>Data</th>
+            </tr>
+          </thead>
           <tbody id="cxTable"></tbody>
         </table>
       </div>
-      <nav><ul class="pagination" id="cxPag"></ul></nav>
+
+      <nav>
+        <ul class="pagination" id="cxPag"></ul>
+      </nav>
     </section>
   </main>
 
-  <!-- MODAIS -->
+  <!-- =============== MODAIS =============== -->
+
   <!-- Cliente (novo) -->
   <div class="modal fade" id="modalCliente" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog"><div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title">Novo Cliente</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body">
-        <div class="mb-2"><label class="form-label">Nome</label><input class="form-control" id="cliNome"></div>
-        <div class="mb-2"><label class="form-label">CPF</label><input class="form-control" id="cliCPF"></div>
-        <div class="mb-2"><label class="form-label">Telefone</label><input class="form-control" id="cliTel"></div>
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Novo Cliente</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <div class="mb-2"><label class="form-label">Nome</label><input class="form-control" id="cliNome"></div>
+          <div class="mb-2"><label class="form-label">CPF</label><input class="form-control" id="cliCPF"></div>
+          <div class="mb-2"><label class="form-label">Telefone</label><input class="form-control" id="cliTel"></div>
+        </div>
+        <div class="modal-footer flex-wrap gap-2">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+          <button class="btn btn-primary" id="btnSalvarCliente">Salvar</button>
+        </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-        <button class="btn btn-primary" id="btnSalvarCliente">Salvar</button>
-      </div>
-    </div></div>
+    </div>
   </div>
 
   <!-- Cliente (editar) -->
   <div class="modal fade" id="modalClienteEdit" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog"><div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title">Editar Cliente</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body">
-        <input type="hidden" id="cliEditId">
-        <div class="mb-2"><label class="form-label">Nome</label><input class="form-control" id="cliEditNome"></div>
-        <div class="mb-2"><label class="form-label">CPF</label><input class="form-control" id="cliEditCPF"></div>
-        <div class="mb-2"><label class="form-label">Telefone</label><input class="form-control" id="cliEditTel"></div>
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Editar Cliente</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <input type="hidden" id="cliEditId">
+          <div class="mb-2"><label class="form-label">Nome</label><input class="form-control" id="cliEditNome"></div>
+          <div class="mb-2"><label class="form-label">CPF</label><input class="form-control" id="cliEditCPF"></div>
+          <div class="mb-2"><label class="form-label">Telefone</label><input class="form-control" id="cliEditTel"></div>
+        </div>
+        <div class="modal-footer flex-wrap gap-2">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+          <button class="btn btn-primary" id="btnAtualizarCliente">Salvar</button>
+        </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-        <button class="btn btn-primary" id="btnAtualizarCliente">Salvar</button>
-      </div>
-    </div></div>
+    </div>
   </div>
 
   <!-- Veículo (novo) -->
   <div class="modal fade" id="modalVeiculo" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog"><div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title">Novo Veículo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body">
-        <div class="mb-2 position-relative">
-          <label class="form-label">Cliente</label>
-          <input class="form-control" id="veiCliNome" placeholder="Digite o nome do cliente" autocomplete="off">
-          <input type="hidden" id="veiCliIdHidden">
-          <div id="veiCliSug" class="list-group position-absolute w-100"
-               style="z-index:1080; max-height:220px; overflow:auto; display:none;"></div>
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Novo Veículo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <div class="mb-2 position-relative">
+            <label class="form-label">Cliente</label>
+            <input class="form-control" id="veiCliNome" placeholder="Digite o nome do cliente" autocomplete="off">
+            <input type="hidden" id="veiCliIdHidden">
+            <div id="veiCliSug" class="list-group position-absolute w-100"
+                style="z-index:1080; max-height:220px; overflow:auto; display:none;"></div>
+          </div>
+          <div class="mb-2"><label class="form-label">Placa</label><input class="form-control" id="veiPlaca"></div>
+          <div class="mb-2"><label class="form-label">KM</label><input type="number" class="form-control" id="veiKM"></div>
+          <div class="mb-2"><label class="form-label">Modelo</label><input class="form-control" id="veiModel"></div>
+          <div class="mb-2"><label class="form-label">Marca</label><input class="form-control" id="veiMarca"></div>
+          <div class="mb-2"><label class="form-label">Cor</label><input class="form-control" id="veiCor"></div>
+          <div class="mb-2"><label class="form-label">Observação</label><input class="form-control" id="veiObs"></div>
         </div>
-        <div class="mb-2"><label class="form-label">Placa</label><input class="form-control" id="veiPlaca"></div>
-        <div class="mb-2"><label class="form-label">KM</label><input type="number" class="form-control" id="veiKM"></div>
-        <div class="mb-2"><label class="form-label">Modelo</label><input class="form-control" id="veiModel"></div>
-        <div class="mb-2"><label class="form-label">Marca</label><input class="form-control" id="veiMarca"></div>
-        <div class="mb-2"><label class="form-label">Cor</label><input class="form-control" id="veiCor"></div>
-        <div class="mb-2"><label class="form-label">Observação</label><input class="form-control" id="veiObs"></div>
+        <div class="modal-footer flex-wrap gap-2">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+          <button class="btn btn-primary" id="btnSalvarVeiculo">Salvar</button>
+        </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-        <button class="btn btn-primary" id="btnSalvarVeiculo">Salvar</button>
-      </div>
-    </div></div>
+    </div>
   </div>
 
   <!-- Veículo (editar) -->
   <div class="modal fade" id="modalVeiculoEdit" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog"><div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title">Editar Veículo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body">
-        <input type="hidden" id="veiEditId">
-        <div class="mb-2"><label class="form-label">Placa</label><input class="form-control" id="veiEditPlaca"></div>
-        <div class="mb-2"><label class="form-label">KM</label><input type="number" class="form-control" id="veiEditKM"></div>
-        <div class="mb-2"><label class="form-label">Modelo</label><input class="form-control" id="veiEditModel"></div>
-        <div class="mb-2"><label class="form-label">Marca</label><input class="form-control" id="veiEditMarca"></div>
-        <div class="mb-2"><label class="form-label">Cor</label><input class="form-control" id="veiEditCor"></div>
-        <div class="mb-2"><label class="form-label">Observação</label><input class="form-control" id="veiEditObs"></div>
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Editar Veículo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <input type="hidden" id="veiEditId">
+          <div class="mb-2"><label class="form-label">Placa</label><input class="form-control" id="veiEditPlaca"></div>
+          <div class="mb-2"><label class="form-label">KM</label><input type="number" class="form-control" id="veiEditKM"></div>
+          <div class="mb-2"><label class="form-label">Modelo</label><input class="form-control" id="veiEditModel"></div>
+          <div class="mb-2"><label class="form-label">Marca</label><input class="form-control" id="veiEditMarca"></div>
+          <div class="mb-2"><label class="form-label">Cor</label><input class="form-control" id="veiEditCor"></div>
+          <div class="mb-2"><label class="form-label">Observação</label><input class="form-control" id="veiEditObs"></div>
+        </div>
+        <div class="modal-footer flex-wrap gap-2">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+          <button class="btn btn-primary" id="btnAtualizarVeiculo">Salvar</button>
+        </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-        <button class="btn btn-primary" id="btnAtualizarVeiculo">Salvar</button>
-      </div>
-    </div></div>
+    </div>
   </div>
 
   <!-- Serviço (novo) -->
   <div class="modal fade" id="modalServico" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog"><div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title">Novo Serviço</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body">
-        <div class="mb-2"><label class="form-label">Nome</label><input class="form-control" id="svcNome"></div>
-        <div class="mb-2"><label class="form-label">Valor (R$)</label><input type="number" step="0.01" class="form-control" id="svcValor"></div>
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Novo Serviço</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <div class="mb-2"><label class="form-label">Nome</label><input class="form-control" id="svcNome"></div>
+          <div class="mb-2"><label class="form-label">Valor (R$)</label><input type="number" step="0.01" class="form-control" id="svcValor"></div>
+        </div>
+        <div class="modal-footer flex-wrap gap-2">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+          <button class="btn btn-primary" id="btnSalvarServico">Salvar</button>
+        </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-        <button class="btn btn-primary" id="btnSalvarServico">Salvar</button>
-      </div>
-    </div></div>
+    </div>
   </div>
 
   <!-- Serviço (editar) -->
   <div class="modal fade" id="modalServicoEdit" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog"><div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title">Editar Serviço</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body">
-        <input type="hidden" id="svcEditId">
-        <div class="mb-2"><label class="form-label">Nome</label><input class="form-control" id="svcEditNome"></div>
-        <div class="mb-2"><label class="form-label">Valor (R$)</label><input type="number" step="0.01" class="form-control" id="svcEditValor"></div>
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Editar Serviço</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <input type="hidden" id="svcEditId">
+          <div class="mb-2"><label class="form-label">Nome</label><input class="form-control" id="svcEditNome"></div>
+          <div class="mb-2"><label class="form-label">Valor (R$)</label><input type="number" step="0.01" class="form-control" id="svcEditValor"></div>
+        </div>
+        <div class="modal-footer flex-wrap gap-2">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+          <button class="btn btn-primary" id="btnAtualizarServico">Salvar</button>
+        </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-        <button class="btn btn-primary" id="btnAtualizarServico">Salvar</button>
-      </div>
-    </div></div>
+    </div>
   </div>
 
   <!-- Nova venda -->
   <div class="modal fade" id="modalVendaNova" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog"><div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Nova venda / orçamento</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-
-      <div class="modal-body">
-        <div class="mb-3 position-relative">
-          <label class="form-label">Cliente</label>
-          <input class="form-control" id="venClienteBusca" placeholder="Digite o nome do cliente" autocomplete="off">
-          <div id="venClienteResultados"
-               class="list-group position-absolute w-100 shadow-sm"
-               style="z-index:1056; max-height:220px; overflow:auto; display:none"></div>
-          <input type="hidden" id="venCli">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header d-flex flex-wrap gap-2">
+          <h5 class="modal-title">Nova venda / orçamento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
 
-        <div class="mb-3">
-          <label class="form-label">Veículo</label>
-          <select class="form-select" id="venVei" disabled>
-            <option value="">Selecione o cliente primeiro…</option>
-          </select>
+        <div class="modal-body">
+          <div class="mb-3 position-relative">
+            <label class="form-label">Cliente</label>
+            <input class="form-control" id="venClienteBusca" placeholder="Digite o nome do cliente" autocomplete="off">
+            <div id="venClienteResultados"
+                class="list-group position-absolute w-100 shadow-sm"
+                style="z-index:1056; max-height:220px; overflow:auto; display:none"></div>
+            <input type="hidden" id="venCli">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Veículo</label>
+            <select class="form-select" id="venVei" disabled>
+              <option value="">Selecione o cliente primeiro…</option>
+            </select>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label">Descrição</label>
+            <input class="form-control" id="venDesc" placeholder="Ex.: Orc 001">
+          </div>
         </div>
 
-        <div class="mb-2">
-          <label class="form-label">Descrição</label>
-          <input class="form-control" id="venDesc" placeholder="Ex.: Orc 001">
+        <div class="modal-footer flex-wrap gap-2">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+          <button class="btn btn-primary" id="btnCriarVenda">Criar</button>
         </div>
       </div>
-
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-        <button class="btn btn-primary" id="btnCriarVenda">Criar</button>
-      </div>
-    </div></div>
+    </div>
   </div>
 
-  <!-- TOAST -->
+  <!-- Venda / orçamento (editar / gerenciar) -->
+  <div class="modal fade" id="modalVendaEdit" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content venda-modal">
+
+        <!-- HEADER -->
+        <div class="venda-modal-header">
+          <div class="venda-head-top d-flex flex-wrap justify-content-between gap-3">
+            <div class="venda-head-left d-flex flex-column gap-1">
+              <div class="venda-head-line d-flex flex-wrap gap-2 align-items-center">
+                <span class="venda-head-title" id="editVendaTitulo">
+                  Venda #—
+                </span>
+                <span class="status-chip chip-open" id="editVendaStatus">EM_ANDAMENTO</span>
+                <span class="status-chip chip-pay" id="editVendaPagamentoBadge">NÃO_PAGO</span>
+              </div>
+              <div class="venda-head-total">
+                Total: <strong id="editVendaTotal">R$ 0,00</strong>
+              </div>
+            </div>
+
+            <div class="venda-head-actions d-flex flex-wrap align-items-center gap-2">
+              <button class="chip-btn d-flex align-items-center gap-1" id="btnVendaPDF">
+                <i class="bi bi-file-earmark-pdf"></i>
+                <span>PDF</span>
+              </button>
+
+              <button class="chip-btn chip-danger d-flex align-items-center gap-1" id="btnVendaCancelar">
+                <i class="bi bi-x-octagon"></i>
+                <span>Cancelar venda</span>
+              </button>
+
+              <button class="icon-btn" id="btnVendaFecharX" data-bs-dismiss="modal" aria-label="Fechar">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- BODY -->
+        <div class="venda-modal-body">
+
+          <!-- BLOCO 1 -->
+          <section class="venda-card">
+            <header class="venda-card-head">
+              <h2 class="venda-card-title">Dados da venda / orçamento</h2>
+            </header>
+
+            <div class="venda-card-grid">
+              <div class="venda-form-group">
+                <label for="editVendaDescricaoInput" class="venda-label">Descrição da nota / observação</label>
+                <input
+                  id="editVendaDescricaoInput"
+                  class="venda-input"
+                  placeholder="Ex: Lavagem completa + hidratação banco"
+                />
+              </div>
+              
+            </div>
+          </section>
+
+          <!-- BLOCO 2 -->
+          <section class="venda-card">
+            <header class="venda-card-head">
+              <h2 class="venda-card-title">Itens da venda</h2>
+            </header>
+
+            <!-- linha adicionar item -->
+            <div class="venda-item-row">
+              <div class="venda-form-group flex-grow-1 position-relative">
+                <label for="editItemServicoBusca" class="venda-label">Serviço</label>
+
+                <input
+                  id="editItemServicoBusca"
+                  class="venda-input"
+                  placeholder="Digite para buscar…"
+                  autocomplete="off"
+                />
+
+                <input type="hidden" id="editItemServicoId">
+                <input type="hidden" id="editItemServicoPreco">
+
+                <div id="servicoSugestoes" class="autocomplete-box" style="display:none;"></div>
+
+                <div id="servicoEscolhidoHint" class="servico-escolhido-hint d-none">
+                  <small class="text-muted">
+                    Selecionado:
+                    <span id="servicoEscolhidoNome">-</span>
+                    — R$
+                    <span id="servicoEscolhidoValor">0,00</span>
+                  </small>
+                </div>
+              </div>
+
+              <div class="venda-form-group venda-qtd">
+                <label for="editItemQtd" class="venda-label">Qtd</label>
+                <input id="editItemQtd" type="number" min="1" class="venda-input" value="1" />
+              </div>
+
+              <div class="venda-form-group venda-desc">
+                <label for="editItemDesc" class="venda-label">Desc. (R$)</label>
+                <input id="editItemDesc" type="number" min="0" step="0.01" class="venda-input" value="0" />
+              </div>
+
+              <div class="venda-form-group venda-addbtn">
+                <button class="add-btn" id="btnItemAdd">
+                  <i class="bi bi-plus-lg"></i>
+                  <span>Adicionar</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- tabela itens -->
+            <div class="table-responsive venda-itens-tablewrap">
+              <table class="table table-borderless align-middle venda-itens-table">
+                <thead>
+                  <tr>
+                    <th>Descrição</th>
+                    <th class="text-end">Preço</th>
+                    <th class="text-center">Qtd</th>
+                    <th class="text-end">Desc</th>
+                    <th class="text-end">Subtotal</th>
+                    <th class="text-center">Remover</th>
+                  </tr>
+                </thead>
+                <tbody id="itensTableBody">
+                  <!-- via JS -->
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- BLOCO 3 -->
+          <section class="venda-card">
+            <header class="venda-card-head">
+              <h2 class="venda-card-title">Finalizar venda</h2>
+            </header>
+
+            <div class="venda-final-grid">
+              <div class="venda-form-group">
+                <label for="cartForma" class="venda-label">Forma de pagamento</label>
+                <select id="cartForma" class="venda-input">
+                  <option value="PIX">PIX</option>
+                  <option value="CARTAO">CARTAO</option>
+                  <option value="DINHEIRO">DINHEIRO</option>
+                </select>
+              </div>
+
+              <div class="venda-final-actions">
+                <button class="finish-btn" id="btnFinalizar">
+                  <i class="bi bi-check2-circle"></i>
+                  <span>Finalizar</span>
+                </button>
+
+
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="venda-modal-footer">
+          <button class="close-footer-btn" id="btnVendaFechar" data-bs-dismiss="modal">
+            Fechar
+          </button>
+          <button class="save-btn" id="btnSalvarCabecalho">
+              <i class="bi bi-save2"></i>
+              <span>Salvar alterações</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
   <div class="toast" id="toast"></div>
 
   <!-- Bootstrap JS -->
