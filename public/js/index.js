@@ -49,7 +49,7 @@ const btnVendaFecharX = document.getElementById("btnVendaFecharX");
 
 // Seção "Dados da venda"
 const elVendaDescInput = document.getElementById("editVendaDescricaoInput"); // descrição da nota / observação
-const elVendaPagamentoSelect = document.getElementById("editVendaPagamentoSelect"); // select forma_pagamento
+const elVendaPagamentoSelect = document.getElementById("editVendaPagamentoSelect"); // select forma_pagamento (no bloco Dados da venda / orçamento)
 const btnSalvarCabecalho = document.getElementById("btnSalvarCabecalho");
 
 // Seção Itens da venda
@@ -274,7 +274,13 @@ async function loadDashboard() {
 
     // aqui você pode querer mudar pra data_ini/data_fim também
     const ven = await api("/api/vendas", {
-      params: { page: 1, per_page: 1, status: "FINALIZADA", data_ini: hojeLocal, data_fim: hojeLocal },
+      params: {
+        page: 1,
+        per_page: 1,
+        status: "FINALIZADA",
+        data_ini: hojeLocal,
+        data_fim: hojeLocal,
+      },
     });
     if (!ven) return;
     document.getElementById("kpiVendasHoje").textContent = String(
@@ -511,15 +517,11 @@ document.getElementById("btnSalvarVeiculo").onclick = async () => {
     const id_cliente = Number(
       document.getElementById("veiCliIdHidden").value || 0
     );
-    const placa = (
-      document.getElementById("veiPlaca").value || ""
-    )
+    const placa = (document.getElementById("veiPlaca").value || "")
       .trim()
       .toUpperCase();
     const km = Number(document.getElementById("veiKM").value || 0);
-    const observacao = (
-      document.getElementById("veiObs").value || ""
-    ).trim();
+    const observacao = (document.getElementById("veiObs").value || "").trim();
     const marca = (document.getElementById("veiMarca").value || "").trim();
     const modelo = (document.getElementById("veiModel").value || "").trim();
     const cor = (document.getElementById("veiCor").value || "").trim();
@@ -591,9 +593,7 @@ document.getElementById("btnAtualizarVeiculo").onclick = async () => {
   const id = Number(document.getElementById("veiEditId").value);
   try {
     const body = {
-      placa: (
-        document.getElementById("veiEditPlaca").value || ""
-      ).toUpperCase(),
+      placa: (document.getElementById("veiEditPlaca").value || "").toUpperCase(),
       km: Number(document.getElementById("veiEditKM").value || 0),
       observacao: document.getElementById("veiEditObs").value || "",
       marca: document.getElementById("veiEditMarca").value || "",
@@ -941,12 +941,20 @@ window.openVendaModal = async (id) => {
     elVendaPagamentoBadge.textContent = v.pagamento || "-";
   }
 
-  // dados da venda (descrição e forma de pagamento)
+  // dados da venda (descrição e forma de pagamento p/ edição simples)
   if (elVendaDescInput) {
     elVendaDescInput.value = v.descricao || "";
   }
   if (elVendaPagamentoSelect) {
     elVendaPagamentoSelect.value = v.pagamento || "NÃO_PAGO";
+  }
+
+  // 🔥 NOVO: refletir a forma de pagamento atual também no select de finalização
+  const cartFormaSelect = document.getElementById("cartForma");
+  if (cartFormaSelect) {
+    const formaAtual =
+      v.pagamento && v.pagamento !== "NÃO_PAGO" ? v.pagamento : "PIX";
+    cartFormaSelect.value = formaAtual;
   }
 
   // zera seleção de serviço novo
@@ -1221,6 +1229,71 @@ window.remItem = async (id_venda, id_item) => {
   } catch (e) {}
 };
 
+// ==================== FINALIZAR VENDA ====================
+
+const btnFinalizarEl = document.getElementById("btnFinalizar");
+
+btnFinalizarEl?.addEventListener("click", async () => {
+  if (!currentVendaId) {
+    showToast("Nenhuma venda aberta.", "error");
+    return;
+  }
+
+  // pega o select fresh do DOM AGORA
+  const cartFormaSelect = document.getElementById("cartForma");
+  const forma_pag = cartFormaSelect ? cartFormaSelect.value : "";
+
+  if (!forma_pag) {
+    showToast("Selecione a forma de pagamento.", "error");
+    return;
+  }
+
+  // trava botão
+  btnFinalizarEl.disabled = true;
+  btnFinalizarEl.classList.add("disabled");
+  btnFinalizarEl.innerHTML = `
+    <i class="bi bi-hourglass-split"></i>
+    <span>Finalizando...</span>
+  `;
+
+  try {
+    const res = await api(`/api/vendas/${currentVendaId}/finalizar`, {
+      method: "POST",
+      body: {
+        pagamento: forma_pag, // manda forma de pagamento escolhida
+      },
+    });
+
+    if (!res) return;
+
+    showToast("Venda finalizada!");
+
+    // recarrega modal com dados atualizados
+    await openVendaModal(res.venda?.id_venda || currentVendaId);
+
+    // recarrega grid das vendas
+    loadVendas();
+
+    // opcional: atualizar dashboard/caixa se for a página visível
+    // const visibleSection = Object.entries(sections)
+    //   .find(([_, el]) => !el.classList.contains("d-none"))?.[0];
+    // if (visibleSection === "dashboard") loadDashboard();
+    // if (visibleSection === "caixa") loadCaixa();
+
+  } catch (err) {
+    console.error("Erro ao finalizar venda:", err);
+    showToast("Erro ao finalizar venda", "error");
+  } finally {
+    // destrava botão
+    btnFinalizarEl.disabled = false;
+    btnFinalizarEl.classList.remove("disabled");
+    btnFinalizarEl.innerHTML = `
+      <i class="bi bi-check2-circle"></i>
+      <span>Finalizar</span>
+    `;
+  }
+});
+
 // ==================== CAIXA ====================
 async function loadCaixa() {
   if (!cxDataRef) {
@@ -1238,7 +1311,7 @@ async function loadCaixa() {
   const resp = await api("/api/caixa", {
     params: { data: cxDataRef, page: cxPage, per_page: cxPer },
   });
-  console.log("Caixa response:", cxDataRef, resp );
+  console.log("Caixa response:", cxDataRef, resp);
   if (!resp) return;
 
   const { lancamentos, pagination, total_valor, total } = resp;
