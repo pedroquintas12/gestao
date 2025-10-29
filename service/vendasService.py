@@ -273,6 +273,8 @@ class vendaService:
 
         if "descricao" in data:
             v.descricao = data.get("descricao")
+        if "forma" in data:
+            v.pagamento = data.get("forma")
 
         db.session.commit()
         return v
@@ -288,7 +290,7 @@ class vendaService:
         payload   = data or {}
         forma     = payload.get("forma_pagamento")
         descricao = payload.get("descricao")
-
+        print("FINALIZAR VENDA:", id_venda, payload)
         try:
             with db.session.begin():
                 v: Venda | None = db.session.execute(
@@ -361,11 +363,10 @@ class vendaService:
         from config.db import db
         from model.companieModel import companie as Companie
         from model.vendaModel import venda as Venda
-        # se já tiver esses imports fora, não precisa repetir
 
         empresa = Companie.query.get(1)
         if not empresa:
-            return api_error(404, "Empresa não encontrada")
+            return api_error(404, "Empresa não encontrada, cadastre uma empresa antes de gerar orçamentos.")
 
         venda_obj = Venda.query.get(orc_id)
         if not venda_obj:

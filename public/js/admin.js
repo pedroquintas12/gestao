@@ -244,8 +244,12 @@
         break;
       }
 
+      if (!status){
+        status = "FINALIZADA";
+      }
+
       const payload = await api('/api/vendas', {
-        params: { page, per_page: per, start_date: start, end_date: end, status, pagamento },
+        params: { page, per_page: per, start_date: start, end_date: end, status, pagamento},
         retries: 1
       }).catch(e => {
         console.error('fetchTodasVendasPeriodo page failed:', e);

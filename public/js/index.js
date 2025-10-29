@@ -347,13 +347,16 @@ document.getElementById("btnSalvarCliente").onclick = async () => {
       numero: cliTel.value,
     };
     const ok = await api("/api/clientes", { method: "POST", body: payload });
+
     if (!ok) return;
     showToast("Cliente salvo!");
     bootstrap.Modal.getInstance(
       document.getElementById("modalCliente")
     ).hide();
     loadClientes();
-  } catch {}
+  } catch (e) {
+    showToast(e.message, "error");
+  }
 };
 
 // editar cliente
@@ -1046,7 +1049,23 @@ btnVendaPDF?.addEventListener("click", async () => {
       return;
     }
     if (!res.ok) {
-      showToast("Erro ao gerar PDF", "error");
+      // tentar ler o corpo como json pra mostrar mensagem bonitinha
+      let msgErro = `Erro ${res.status}`;
+
+      try {
+        const data = await res.json(); // {error, cause, ...}
+        if (data?.error) {
+          msgErro = data.error;
+          if (data.cause) {
+            msgErro += ` (${data.cause})`;
+          }
+        }
+      } catch (e) {
+        // se não é JSON (por ex. 500 HTML), fallback
+        msgErro = res.statusText || msgErro;
+      }
+
+      showToast(msgErro, "error");
       return;
     }
     const blob = await res.blob();
@@ -1260,29 +1279,22 @@ btnFinalizarEl?.addEventListener("click", async () => {
     const res = await api(`/api/vendas/${currentVendaId}/finalizar`, {
       method: "POST",
       body: {
-        pagamento: forma_pag, // manda forma de pagamento escolhida
+        forma_pagamento: forma_pag, // manda forma de pagamento escolhida
       },
     });
-
+    console.log(forma_pag);
     if (!res) return;
 
     showToast("Venda finalizada!");
 
-    // recarrega modal com dados atualizados
     await openVendaModal(res.venda?.id_venda || currentVendaId);
 
-    // recarrega grid das vendas
     loadVendas();
 
-    // opcional: atualizar dashboard/caixa se for a página visível
-    // const visibleSection = Object.entries(sections)
-    //   .find(([_, el]) => !el.classList.contains("d-none"))?.[0];
-    // if (visibleSection === "dashboard") loadDashboard();
-    // if (visibleSection === "caixa") loadCaixa();
 
   } catch (err) {
     console.error("Erro ao finalizar venda:", err);
-    showToast("Erro ao finalizar venda", "error");
+    showToast(err, "error");
   } finally {
     // destrava botão
     btnFinalizarEl.disabled = false;
