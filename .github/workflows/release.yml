@@ -3,9 +3,13 @@ name: Build & Publish Windows Installer
 on:
   push:
     tags:
-      - 'V0.1.3'          # seus tags: V0.1.2, etc
+      - "v*"
+      - "V*"         # seus tags: V0.1.2, etc
   workflow_dispatch:
 
+permissions:
+  contents: write 
+  
 jobs:
   build-windows:
     runs-on: windows-latest
