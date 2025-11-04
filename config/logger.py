@@ -11,7 +11,10 @@ APP_LOG = LOG_DIR / "app.log"
 root = logging.getLogger()
 if not root.handlers:  # evita duplicar
     root.setLevel(logging.INFO)
-    fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+    fmt = logging.Formatter(
+    '%(asctime)s - %(levelname)s - [%(filename)s:%(funcName)s:%(lineno)d] - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 
     fh = RotatingFileHandler(APP_LOG, maxBytes=1_000_000, backupCount=5, encoding="utf-8")
     fh.setFormatter(fmt)

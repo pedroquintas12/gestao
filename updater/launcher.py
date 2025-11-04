@@ -20,7 +20,7 @@ os.makedirs(LOG_DIR, exist_ok=True)
 LAUNCHER_LOG = os.path.join(LOG_DIR, "launcher.log")
 PIP_LOG      = os.path.join(LOG_DIR, "pip_install.log")
 
-LATEST_URL   = "https://pedroquintas12.github.io/gestao/latest.json"
+LATEST_URL   = "https://raw.githubusercontent.com/pedroquintas12/gestao/refs/tags/V0.1.0/latest.json"
 
 def setup_logging(debug: bool = False):
     """Somente arquivo. Em binário --noconsole, stdout pode ser None."""
