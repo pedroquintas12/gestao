@@ -20,7 +20,7 @@ os.makedirs(LOG_DIR, exist_ok=True)
 LAUNCHER_LOG = os.path.join(LOG_DIR, "launcher.log")
 PIP_LOG      = os.path.join(LOG_DIR, "pip_install.log")
 
-LATEST_URL   = "https://raw.githubusercontent.com/pedroquintas12/gestao/refs/tags/V0.1.2/latest.json"
+LATEST_URL   = "https://raw.githubusercontent.com/pedroquintas12/gestao/refs/heads/main/latest.json"
 
 def setup_logging(debug: bool = False):
     """Somente arquivo. Em binário --noconsole, stdout pode ser None."""
@@ -76,8 +76,8 @@ def ensure_env():
     Se GESTAO_SKIP_PIP=1, só valida o venv.
     """
     if not os.path.exists(PYTHON):
-        raise RuntimeError(f"venv ausente: {PYTHON}")
-
+        # cria venv
+        run([sys.executable, "-m", "venv", VENV_DIR], check=True)
     if os.environ.get("GESTAO_SKIP_PIP") == "1":
         log("[pip] skip solicitado por GESTAO_SKIP_PIP=1")
         return
@@ -132,30 +132,58 @@ def migrate_env_to_appdata():
     except Exception:
         logging.exception("Falha ao migrar .env:")
 
+# launcher.py (substitua o maybe_update inteiro por este)
+OWNER = "pedroquintas12"
+REPO  = "gestao"
+GITHUB_LATEST_API = f"https://api.github.com/repos/{OWNER}/{REPO}/releases/latest"
+
+def _github_latest_asset_url(ext=".exe"):
+    with urllib.request.urlopen(GITHUB_LATEST_API, timeout=15) as r:
+        data = json.load(r)
+    tag = data.get("tag_name") or ""
+    assets = data.get("assets") or []
+    # Pega o primeiro .exe
+    for a in assets:
+        name = (a.get("name") or "").lower()
+        if name.endswith(ext):
+            return tag, a["browser_download_url"]
+    return tag, None
+
 def maybe_update():
     try:
-        with urllib.request.urlopen(LATEST_URL, timeout=10) as r:
-            latest = json.load(r)
-        win = latest.get("windows", {})
-        url = win.get("installer_url")
-        sha = (win.get("sha256") or "").lower()
+        # 1) Tenta API do GitHub (recomendado: sempre correto e imune a case/caminho)
+        tag, url = _github_latest_asset_url(".exe")
         if not url:
-            logging.info("Sem URL de update.")
-            return
+            logging.info("Nenhum asset .exe no latest; tentando latest.json…")
+            # 2) Fallback para latest.json (opcional)
+            with urllib.request.urlopen(LATEST_URL, timeout=10) as r:
+                latest = json.load(r)
+            win = latest.get("windows", {})
+            url = win.get("installer_url")
+            sha_expected = (win.get("sha256") or "").lower()
+            if not url:
+                logging.info("Sem URL de update.")
+                return
+        else:
+            sha_expected = ""  # pela API não vem SHA; vamos baixar e checar se você quiser
+
         tmpdir = tempfile.mkdtemp()
         inst = os.path.join(tmpdir, "setup.exe")
         logging.info(f"Baixando update: {url}")
         with urllib.request.urlopen(url, timeout=60) as resp, open(inst, "wb") as f:
-            f.write(resp.read())
-        if sha:
+            shutil.copyfileobj(resp, f)
+
+        if sha_expected:
             got = file_sha256(inst).lower()
-            if got != sha:
-                logging.error(f"SHA inválido. Esperado={sha} obtido={got}")
+            if got != sha_expected:
+                logging.error(f"SHA inválido. Esperado={sha_expected} obtido={got}")
                 return
+
         subprocess.Popen([inst, "/VERYSILENT", "/NORESTART"], close_fds=True)
         logging.info("Update silencioso disparado.")
     except Exception:
         logging.exception("Falha no update:")
+
 
 def run_app():
     exe = PYTHONW  # sem console

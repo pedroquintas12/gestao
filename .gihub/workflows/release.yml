@@ -1,0 +1,95 @@
+name: Build & Publish Windows Installer
+
+on:
+  push:
+    tags:
+      - 'V0.1.3'          # seus tags: V0.1.2, etc
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Descobrir versão a partir do tag
+        id: v
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          # remove prefixo V/v se existir (V0.1.2 -> 0.1.2)
+          if ($tag -match '^[Vv](.+)$') { $ver = $Matches[1] } else { $ver = $tag }
+          echo "version=$ver" >> $env:GITHUB_OUTPUT
+
+      - name: Instalar Inno Setup
+        shell: pwsh
+        run: |
+          choco install innosetup --yes
+
+      - name: (Opcional) Build do launcher com PyInstaller
+        shell: pwsh
+        run: |
+          py -3.12 -m pip install -U pip pyinstaller
+          py -3.12 -m PyInstaller --onefile launcher.py -n launcher.exe
+          # coloca em dist\launcher.exe (já bate com seu .iss)
+      
+      - name: Compilar instalador (Inno Setup)
+        shell: pwsh
+        run: |
+          $iss = "installer\\gestao_with_python.iss"
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
+            "/DMyAppVersion=${{ steps.v.outputs.version }}" `
+            $iss
+
+      - name: Renomear artefato final
+        id: artef
+        shell: pwsh
+        run: |
+          $exe = "Output\Gestao-Setup-${{ steps.v.outputs.version }}.exe"
+          if (!(Test-Path $exe)) {
+            throw "Instalador não encontrado: $exe"
+          }
+          echo "exe=$exe" >> $env:GITHUB_OUTPUT
+
+      - name: Calcular SHA256
+        id: sha
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash "${{ steps.artef.outputs.exe }}" -Algorithm SHA256).Hash
+          echo "sha=$hash" >> $env:GITHUB_OUTPUT
+
+      - name: Anexar ao release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ steps.artef.outputs.exe }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Atualizar latest.json no branch main (opcional, se quiser manter o arquivo)
+        if: ${{ github.ref_type == 'tag' }}
+        shell: pwsh
+        run: |
+          # Monta a URL correta do asset no release desse tag
+          $tag = "${{ github.ref_name }}"
+          $url = "https://github.com/${{ github.repository }}/releases/download/$tag/Gestao-Setup-${{ steps.v.outputs.version }}.exe"
+          $json = @{
+            version  = "${{ steps.v.outputs.version }}"
+            windows  = @{
+              installer_url = $url
+              sha256        = "${{ steps.sha.outputs.sha }}"
+            }
+            mandatory = $false
+            notes     = "Auto-update"
+          } | ConvertTo-Json -Depth 4
+          Set-Content latest.json $json -Encoding UTF8
+
+          git config user.name  "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add latest.json
+          git commit -m "chore: update latest.json for $tag" || echo "sem mudanças"
+          git push origin HEAD:main
