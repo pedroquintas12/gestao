@@ -9,7 +9,7 @@ on:
 
 permissions:
   contents: write 
-  
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -38,7 +38,7 @@ jobs:
         shell: pwsh
         run: |
           py -3.12 -m pip install -U pip pyinstaller
-          py -3.12 -m PyInstaller --onefile launcher.py -n launcher.exe
+          py -3.12 -m PyInstaller --onefile launcher.py -n dist\launcher.exe
           # coloca em dist\launcher.exe (já bate com seu .iss)
       
       - name: Compilar instalador (Inno Setup)
