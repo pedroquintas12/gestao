@@ -4,6 +4,7 @@ from config.db import db
 from config import load_env_and_config
 from .erros import register_error_handlers
 from .seeds import seed_db
+import config.logger  
 
 cfg = load_env_and_config()
 

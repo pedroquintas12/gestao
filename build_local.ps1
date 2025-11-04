@@ -9,7 +9,7 @@ python -m pip install -U pip
 pip install pyinstaller
 
 Write-Host "== Construindo launcher ==" -ForegroundColor Cyan
-pyinstaller -y --onefile --noconsole --icon public\favicon.ico --name launcher update\launcher.py
+pyinstaller -y --onefile --noconsole --icon public\favicon.ico --name launcher updater\launcher.py
 
 $pyOffline = "installer\binaries\python-3.12.6-amd64.exe"
 if (!(Test-Path $pyOffline)) {
