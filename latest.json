@@ -1,9 +1,9 @@
 {
-  "version": "0.1.2",
+  "notes": "Auto-update",
+  "version": "0.2.0",
   "windows": {
-    "installer_url": "https://github.com/pedroquintas12/gestao/releases/download/V0.1.2/Gestao-Setup-1.0.0.exe",
-    "sha256": "4D5C7C3A81627954BC5CA4FDB8ED8A887EFBFC78911840DA003CACD0DA3DC3B0"
+    "installer_url": "https://github.com/pedroquintas12/gestao/releases/download/V0.2.0/Gestao-Setup-0.2.0.exe",
+    "sha256": "E53D32DE1CA3BA635F803920E8821E2963837C8DF9709D76E436E4710EE27CE3"
   },
-  "mandatory": false,
-  "notes": "Correções e melhorias."
+  "mandatory": false
 }
