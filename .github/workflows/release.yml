@@ -3,8 +3,13 @@ name: Build & Publish Windows Installer
 on:
   push:
     tags:
-      - 'V*'          # seus tags: V0.1.2, etc
+      - 'V*'
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Versão para testar (ex: 0.1.10)"
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -19,27 +24,29 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Descobrir versão a partir do tag
+      - name: Resolver versão
         id: v
         shell: pwsh
         run: |
-          $tag = "${{ github.ref_name }}"
-          # remove prefixo V/v se existir (V0.1.2 -> 0.1.2)
-          if ($tag -match '^[Vv](.+)$') { $ver = $Matches[1] } else { $ver = $tag }
+          $manual = "${{ github.event.inputs.version }}".Trim()
+          if ($manual) {
+            $ver = $manual
+          } else {
+            $tag = "${{ github.ref_name }}"
+            if ($tag -match '^[Vv](.+)$') { $ver = $Matches[1] } else { $ver = $tag }
+          }
           echo "version=$ver" >> $env:GITHUB_OUTPUT
 
       - name: Instalar Inno Setup
         shell: pwsh
-        run: |
-          choco install innosetup --yes
+        run: choco install innosetup --yes
 
       - name: (Opcional) Build do launcher com PyInstaller
         shell: pwsh
         run: |
           py -3.12 -m pip install -U pip pyinstaller
           py -3.12 -m PyInstaller --onefile ./updater/launcher.py -n launcher.exe
-          # coloca em dist\launcher.exe (já bate com seu .iss)
-      
+
       - name: Compilar instalador (Inno Setup)
         shell: pwsh
         run: |
@@ -52,40 +59,38 @@ jobs:
         id: artef
         shell: pwsh
         run: |
-          $exe = "Output\Gestao-Setup-${{ steps.v.outputs.version }}.exe"
-          if (!(Test-Path $exe)) {
-            throw "Instalador não encontrado: $exe"
-          }
+          $exe = "Output\\Gestao-Setup-${{ steps.v.outputs.version }}.exe"
+          if (!(Test-Path $exe)) { throw "Instalador não encontrado: $exe" }
           echo "exe=$exe" >> $env:GITHUB_OUTPUT
 
-      - name: Calcular SHA256
-        id: sha
-        shell: pwsh
-        run: |
-          $hash = (Get-FileHash "${{ steps.artef.outputs.exe }}" -Algorithm SHA256).Hash
-          echo "sha=$hash" >> $env:GITHUB_OUTPUT
-
+      # 👉 Se for TAG: anexa no release
       - name: Anexar ao release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            ${{ steps.artef.outputs.exe }}
+          files: ${{ steps.artef.outputs.exe }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Atualizar latest.json no branch main (opcional, se quiser manter o arquivo)
-        if: ${{ github.ref_type == 'tag' }}
+      # 👉 Se for DISPATCH (teste): só publicar como artifact do workflow
+      - name: Publicar instalador como artifact (teste)
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: Gestao-Setup-${{ steps.v.outputs.version }}.exe
+          path: ${{ steps.artef.outputs.exe }}
+
+      # (Opcional) Atualizar latest.json — só em tag
+      - name: Atualizar latest.json no main
+        if: startsWith(github.ref, 'refs/tags/')
         shell: pwsh
         run: |
-          # Monta a URL correta do asset no release desse tag
           $tag = "${{ github.ref_name }}"
           $url = "https://github.com/${{ github.repository }}/releases/download/$tag/Gestao-Setup-${{ steps.v.outputs.version }}.exe"
+          $hash = (Get-FileHash "${{ steps.artef.outputs.exe }}" -Algorithm SHA256).Hash
           $json = @{
             version  = "${{ steps.v.outputs.version }}"
-            windows  = @{
-              installer_url = $url
-              sha256        = "${{ steps.sha.outputs.sha }}"
-            }
+            windows  = @{ installer_url = $url; sha256 = $hash }
             mandatory = $false
             notes     = "Auto-update"
           } | ConvertTo-Json -Depth 4
