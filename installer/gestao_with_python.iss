@@ -8,7 +8,7 @@
 ...
 
 [Setup]
-AppId={#MyGuid}}
+AppId={#MyGuid}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
