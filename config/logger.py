@@ -1,4 +1,5 @@
 # config/logger.py
+from datetime import datetime
 import os, sys, logging
 from pathlib import Path
 from logging.handlers import RotatingFileHandler
@@ -30,3 +31,33 @@ if not root.handlers:  # evita duplicar
         root.addHandler(sh)
 
 logging.info("logger do app configurado; arquivo: %s", APP_LOG)
+
+
+# Configurando o log
+log_directory = os.path.join(os.getcwd(), 'logs')
+
+# Cria o diretório se não existir
+if not os.path.exists(log_directory):
+    os.makedirs(log_directory)
+
+
+current_date = datetime.now().strftime('%y-%m-%d')
+log_name = f'log-envio-{current_date}.log'
+
+log_file_path = os.path.join(log_directory,log_name)
+
+logger = logging.getLogger('Log')
+logger.setLevel(logging.DEBUG)
+
+file_handler = logging.FileHandler(log_file_path)
+console_handler = logging.StreamHandler()
+
+formatter = logging.Formatter(
+    '%(asctime)s - %(levelname)s - [%(filename)s:%(funcName)s:%(lineno)d] - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+file_handler.setFormatter(formatter)
+console_handler.setFormatter(formatter)
+
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)

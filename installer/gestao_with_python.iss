@@ -57,7 +57,8 @@ Source: ".\binaries\python-3.12.6-amd64.exe"; DestDir: "{tmp}"; DestName: "pytho
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\launcher.exe"; WorkingDir: "{app}"
 Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\launcher.exe"; WorkingDir: "{app}"; Tasks: desktopicon
-
+Name: "{group}\{#MyAppName} (Console)"; Filename: "{cmd}"; Parameters: "/k ""{app}\run_console.bat"""; WorkingDir: "{app}"
+Name: "{commondesktop}\{#MyAppName} (Console)"; Filename: "{cmd}"; Parameters: "/k ""{app}\run_console.bat"""; WorkingDir: "{app}"; Tasks: desktopicon
 [Tasks]
 Name: "desktopicon"; Description: "Criar atalho na Área de Trabalho"; GroupDescription: "Atalhos:"; Flags: unchecked
 

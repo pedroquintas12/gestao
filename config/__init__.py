@@ -104,12 +104,12 @@ def load_env_and_config():
 
     # ===== 5) Logs de diagnóstico (não quebram execução) =====
     try:
-        import logging
-        log = logging.getLogger(__name__)
-        log.info("INSTALL_ROOT=%s", cfg["INSTALL_ROOT"])
-        log.info("TEMPLATES  =%s", cfg["TEMPLATE_FOLDER_ABS"])
-        log.info("STATIC     =%s", cfg["STATIC_FOLDER_ABS"])
-        log.info("DB URI     =%s", cfg["SQLALCHEMY_DATABASE_URI"])
+        from config.logger import logger
+        
+        logger.info("INSTALL_ROOT=%s", cfg["INSTALL_ROOT"])
+        logger.info("TEMPLATES  =%s", cfg["TEMPLATE_FOLDER_ABS"])
+        logger.info("STATIC     =%s", cfg["STATIC_FOLDER_ABS"])
+        logger.info("DB URI     =%s", cfg["SQLALCHEMY_DATABASE_URI"])
 
         missing = []
         if not Path(cfg["TEMPLATE_FOLDER_ABS"]).exists():
@@ -117,7 +117,7 @@ def load_env_and_config():
         if not Path(cfg["STATIC_FOLDER_ABS"]).exists():
             missing.append(f"Static não encontrado em: {cfg['STATIC_FOLDER_ABS']}")
         if missing:
-            log.error("Caminhos inválidos: %s", " | ".join(missing))
+            logger.error("Caminhos inválidos: %s", " | ".join(missing))
     except Exception:
         pass
 
