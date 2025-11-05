@@ -3,8 +3,8 @@
 #ifndef MyAppVersion
   #define MyAppVersion "0.0.0"  ; default se alguém rodar local sem passar /D
 #endif
-#define MyAppPublisher "Sua Empresa"
-#define MyAppId "{{B1A4A2F7-6C3E-4B28-990C-C6A1E6B19A01}"
+#define MyAppPublisher "Workflow"
+#define MyAppId "{{B1A4A2F7-6C3E-4B28-990C-C6A1E6B19A01}}" 
 ...
 
 [Setup]
