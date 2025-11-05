@@ -21,6 +21,9 @@ ArchitecturesInstallIn64BitMode=x64
 DisableDirPage=no
 DisableProgramGroupPage=yes
 PrivilegesRequired=admin
+CloseApplications=force             
+RestartApplications=no              
+CloseApplicationsFilter=launcher.exe;python.exe;pythonw.exe;Gestao.exe
 
 [Languages]
 Name: "portuguese"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
@@ -34,6 +37,13 @@ Source: "..\controller\*"; DestDir: "{app}\controller"; Flags: recursesubdirs ig
 Source: "..\model\*"; DestDir: "{app}\model"; Flags: recursesubdirs ignoreversion
 Source: "..\views\*"; DestDir: "{app}\views"; Flags: recursesubdirs ignoreversion
 Source: "..\public\*"; DestDir: "{app}\public"; Flags: recursesubdirs ignoreversion
+Source: "..\config\*"; DestDir: "{app}\config"; Flags: recursesubdirs ignoreversion
+Source: "..\enums\*"; DestDir: "{app}\enums"; Flags: recursesubdirs ignoreversion
+Source: "..\helpers\*"; DestDir: "{app}\helpers"; Flags: recursesubdirs ignoreversion
+Source: "..\routes\*"; DestDir: "{app}\routes"; Flags: recursesubdirs ignoreversion
+Source: "..\service\*"; DestDir: "{app}\service"; Flags: recursesubdirs ignoreversion
+Source: "..\utils\*"; DestDir: "{app}\utils"; Flags: recursesubdirs ignoreversion
+
 
 ; env.example vai junto (sem segredos)
 Source: "..\env.example"; DestDir: "{app}"; DestName: "env.example"; Flags: ignoreversion

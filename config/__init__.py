@@ -1,4 +1,4 @@
-# app/config.py (ou no topo do main.py)
+# config/__init__.py
 import os
 from pathlib import Path
 
@@ -7,65 +7,118 @@ def _str2bool(v: str, default=False):
         return default
     return str(v).strip().lower() in {"1", "true", "t", "yes", "y", "on"}
 
-def load_env_and_config():
-    # 1) Local do .env em produção
-    appdata = os.environ.get("LOCALAPPDATA")
-    prod_env = Path(appdata) / "Gestao" / ".env" if appdata else None
+def _find_install_root(anchor_name: str = "config", max_hops: int = 6) -> Path:
+    """
+    Sobe diretórios a partir deste arquivo até achar a pasta 'config'
+    e retorna o PAI dela (a raiz onde ficam views/ e public/).
+    """
+    here = Path(__file__).resolve()
+    p = here.parent
+    hops = 0
+    while p.parent != p and hops <= max_hops:
+        if p.name.lower() == anchor_name.lower():
+            return p.parent
+        p = p.parent
+        hops += 1
+    # fallback seguro: um nível acima de config/__init__.py
+    return Path(__file__).resolve().parent.parent
 
-    # 2) Local do .env em desenvolvimento (ajuste se seu main.py não está na raiz)
-    repo_root = Path(__file__).resolve().parent
-    # se este arquivo estiver em app/config.py, repo_root.parent.parent; ajuste conforme sua estrutura
-    while repo_root.name not in {"gestao", "Gestao"} and repo_root.parent != repo_root:
-        repo_root = repo_root.parent
-    dev_env = repo_root / ".env"
-
-    # 3) Carrega .env (ordem: override -> AppData -> raiz do repo)
-    override = os.environ.get("GESTAO_ENV")
-    candidates = [Path(override)] if override else []
-    if prod_env:
-        candidates.append(prod_env)
-    candidates.append(dev_env)
-
+def _load_first_env(candidates):
+    """Carrega o primeiro arquivo .env existente dentre os candidatos (sem quebrar se faltar python-dotenv)."""
     try:
         from dotenv import load_dotenv
-        for p in candidates:
-            if p and p.exists():
-                load_dotenv(p, override=False)
-                break
     except Exception:
-        pass  # segue sem quebrar se faltar python-dotenv
+        return
+    for p in candidates:
+        try:
+            if p and Path(p).exists():
+                load_dotenv(p, override=False)
+                return
+        except Exception:
+            # segue tentando os demais
+            pass
 
-    # 4) Monta config final
+def load_env_and_config():
+    # ===== 1) Carregar .env (ordem: override -> AppData -> raiz) =====
+    appdata = os.environ.get("LOCALAPPDATA")
+    install_root = _find_install_root(anchor_name="config")
+
+    # Candidatos produção (AppData\Gestao)
+    prod_candidates = []
+    if appdata:
+        prod_dir = Path(appdata) / "Gestao"
+        prod_candidates = [
+            prod_dir / ".env",          # alvo final
+            prod_dir / "env.example",   # fallback
+            prod_dir / "env.exemple",   # fallback (grafia alternativa)
+        ]
+
+    # Candidatos desenvolvimento (raiz do app)
+    dev_candidates = [
+        install_root / ".env",
+        install_root / "env.example",
+        install_root / "env.exemple",
+    ]
+
+    # Override absoluto via variável (ex.: GESTAO_ENV=C:\path\custom.env)
+    override = os.environ.get("GESTAO_ENV")
+    candidates = [Path(override)] if override else []
+    candidates += prod_candidates + dev_candidates
+
+    _load_first_env(candidates)
+
+    # ===== 2) Configs base =====
     cfg = {}
     cfg["TEMPLATE_FOLDER"] = os.getenv("TEMPLATE_FOLDER", "views")
     cfg["STATIC_FOLDER"]   = os.getenv("STATIC_FOLDER", "public")
     cfg["SECRET_KEY"]      = os.getenv("SECRET_KEY", "change-me")
 
+    # ===== 3) Banco =====
     uri = os.getenv("SQLALCHEMY_DATABASE_URI", "sqlite:///gestor.db")
-
-    # Expande placeholder %LOCALAPPDATA% se for usado no .env
     if "%LOCALAPPDATA%" in uri and appdata:
         uri = uri.replace("%LOCALAPPDATA%", appdata.replace("\\", "/"))
-
-    # Se for SQLite relativo (ex.: sqlite:///gestor.db), envia para %LocalAppData%\Gestao\gestor.db
+    # sqlite:///arquivo_relativo -> envia para %LOCALAPPDATA%\Gestao\arquivo_relativo
     if uri.startswith("sqlite:///") and not uri.startswith("sqlite:////"):
-        # extrai nome do arquivo relativo
         rel = uri[len("sqlite:///"):]
         if not (":" in rel or rel.startswith("/")) and appdata:
             data_dir = Path(appdata) / "Gestao"
             data_dir.mkdir(parents=True, exist_ok=True)
-            db_path = (data_dir / rel).resolve()
-            uri = f"sqlite:///{db_path.as_posix()}"
-
+            uri = f"sqlite:///{(data_dir / rel).resolve().as_posix()}"
     cfg["SQLALCHEMY_DATABASE_URI"] = uri
     cfg["SQLALCHEMY_TRACK_MODIFICATIONS"] = _str2bool(os.getenv("SQLALCHEMY_TRACK_MODIFICATIONS", "false"))
     cfg["SEED_ON_STARTUP"] = _str2bool(os.getenv("SEED_ON_STARTUP", "false"))
 
-    # 5) Resolve caminhos absolutos das pastas de template/static com base no diretório de instalação
-    install_dir = Path(__file__).resolve().parent  # ajuste se main.py estiver na raiz
-    tpl = (install_dir / cfg["TEMPLATE_FOLDER"]).resolve()
-    stc = (install_dir / cfg["STATIC_FOLDER"]).resolve()
+    # ===== 4) Resolve diretórios absolutos com overrides opcionais =====
+    tpl_abs_env = os.getenv("TEMPLATE_FOLDER_ABS", "").strip()
+    stc_abs_env = os.getenv("STATIC_FOLDER_ABS", "").strip()
+
+    tpl = Path(tpl_abs_env) if tpl_abs_env else (install_root / cfg["TEMPLATE_FOLDER"])
+    stc = Path(stc_abs_env) if stc_abs_env else (install_root / cfg["STATIC_FOLDER"])
+
+    tpl = tpl.resolve()
+    stc = stc.resolve()
+
+    cfg["INSTALL_ROOT"]        = str(install_root)
     cfg["TEMPLATE_FOLDER_ABS"] = str(tpl)
     cfg["STATIC_FOLDER_ABS"]   = str(stc)
+
+    # ===== 5) Logs de diagnóstico (não quebram execução) =====
+    try:
+        import logging
+        log = logging.getLogger(__name__)
+        log.info("INSTALL_ROOT=%s", cfg["INSTALL_ROOT"])
+        log.info("TEMPLATES  =%s", cfg["TEMPLATE_FOLDER_ABS"])
+        log.info("STATIC     =%s", cfg["STATIC_FOLDER_ABS"])
+        log.info("DB URI     =%s", cfg["SQLALCHEMY_DATABASE_URI"])
+
+        missing = []
+        if not Path(cfg["TEMPLATE_FOLDER_ABS"]).exists():
+            missing.append(f"Templates não encontrados em: {cfg['TEMPLATE_FOLDER_ABS']}")
+        if not Path(cfg["STATIC_FOLDER_ABS"]).exists():
+            missing.append(f"Static não encontrado em: {cfg['STATIC_FOLDER_ABS']}")
+        if missing:
+            log.error("Caminhos inválidos: %s", " | ".join(missing))
+    except Exception:
+        pass
 
     return cfg
