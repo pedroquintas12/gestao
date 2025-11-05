@@ -5,7 +5,6 @@
 #endif
 #define MyAppPublisher "Workflow"
 #define MyGuid "{B1A4A2F7-6C3E-4B28-990C-C6A1E6B19A01}"
-...
 
 [Setup]
 AppId={#MyGuid}
