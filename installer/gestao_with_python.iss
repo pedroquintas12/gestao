@@ -1,13 +1,13 @@
 ; installer/gestao_with_python.iss
 #define MyAppName "Gestao"
 #ifndef MyAppVersion
-  #define MyAppVersion "0.0.0"  ; default se alguém rodar local sem passar /D
+  #define MyAppVersion "0.0.0"
 #endif
 #define MyAppPublisher "Workflow"
-#define MyGuid "{B1A4A2F7-6C3E-4B28-990C-C6A1E6B19A01}"
+#define MyGuid "B1A4A2F7-6C3E-4B28-990C-C6A1E6B19A01"
 
 [Setup]
-AppId={#MyGuid}
+AppId={{#MyGuid}}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
