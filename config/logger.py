@@ -3,6 +3,10 @@ from datetime import datetime
 import os, sys, logging
 from pathlib import Path
 from logging.handlers import RotatingFileHandler
+import os, sys, subprocess, tempfile, json, urllib.request, hashlib, shutil, traceback, ctypes, time
+from pathlib import Path
+from datetime import datetime, timedelta
+
 
 APP_NAME = "Gestao"
 LOG_DIR = Path(os.environ.get("LOCALAPPDATA", "")) / APP_NAME / "logs"
