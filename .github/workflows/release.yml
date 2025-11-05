@@ -59,7 +59,7 @@ jobs:
         id: artef
         shell: pwsh
         run: |
-          $exe = "Output\\Gestao-Setup-${{ steps.v.outputs.version }}.exe"
+          $exe = "installer\\Output\\Gestao-Setup-${{ steps.v.outputs.version }}.exe"
           if (!(Test-Path $exe)) { throw "Instalador não encontrado: $exe" }
           echo "exe=$exe" >> $env:GITHUB_OUTPUT
 
