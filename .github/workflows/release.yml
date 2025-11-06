@@ -2,8 +2,7 @@ name: Build & Publish Windows Installer
 
 on:
   push:
-    tags:
-      - 'V*'
+    tags: ['V*']
   workflow_dispatch:
     inputs:
       version:
@@ -37,20 +36,53 @@ jobs:
           }
           echo "version=$ver" >> $env:GITHUB_OUTPUT
 
+      # Garante Python disponível (py launcher às vezes não tem 3.12)
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Gerar version.py para a GUI
+        shell: pwsh
+        run: |
+          $ver = "${{ steps.v.outputs.version }}"
+          @"
+          __version__ = "$ver"
+          "@ | Out-File -FilePath .\version.py -Encoding UTF8
+
       - name: Instalar Inno Setup
         shell: pwsh
         run: choco install innosetup --yes
 
-      - name: (Opcional) Build do launcher com PyInstaller
+      - name: Instalar PyInstaller
+        shell: pwsh
+        run: python -m pip install -U pip pyinstaller
+
+      # (Opcional) Build do launcher com PyInstaller
+      - name: Build launcher.exe (opcional)
         shell: pwsh
         run: |
-          py -3.12 -m pip install -U pip pyinstaller
-          py -3.12 -m PyInstaller --onefile ./updater/launcher.py -n launcher.exe
+          if (Test-Path ".\updater\launcher.py") {
+            python -m PyInstaller --onefile --noconsole -n launcher .\updater\launcher.py
+          } else {
+            echo "Sem updater/launcher.py; pulando."
+          }
+
+      - name: Build gui.exe (com ícone)
+        shell: pwsh
+        run: |
+          $ico = "public\favicon.ico"  # use um .ico válido
+          if (Test-Path $ico) {
+            python -m PyInstaller --onefile --noconsole --icon $ico --name gui GUI.py
+          } else {
+            echo "WARN: Icon $ico não encontrado; construindo sem ícone."
+            python -m PyInstaller --onefile --noconsole --name gui GUI.py
+          }
 
       - name: Compilar instalador (Inno Setup)
         shell: pwsh
         run: |
-          $iss = "installer\\gestao_with_python.iss"
+          $iss = "installer\gestao_with_python.iss"
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
             "/DMyAppVersion=${{ steps.v.outputs.version }}" `
             $iss
@@ -59,11 +91,10 @@ jobs:
         id: artef
         shell: pwsh
         run: |
-          $exe = "installer\\Output\\Gestao-Setup-${{ steps.v.outputs.version }}.exe"
+          $exe = "installer\Output\Gestao-Setup-${{ steps.v.outputs.version }}.exe"
           if (!(Test-Path $exe)) { throw "Instalador não encontrado: $exe" }
           echo "exe=$exe" >> $env:GITHUB_OUTPUT
 
-      # 👉 Se for TAG: anexa no release
       - name: Anexar ao release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
@@ -72,7 +103,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 👉 Se for DISPATCH (teste): só publicar como artifact do workflow
       - name: Publicar instalador como artifact (teste)
         if: ${{ github.event_name == 'workflow_dispatch' }}
         uses: actions/upload-artifact@v4
@@ -80,7 +110,6 @@ jobs:
           name: Gestao-Setup-${{ steps.v.outputs.version }}.exe
           path: ${{ steps.artef.outputs.exe }}
 
-      # (Opcional) Atualizar latest.json — só em tag
       - name: Atualizar latest.json no main
         if: startsWith(github.ref, 'refs/tags/')
         shell: pwsh
@@ -95,7 +124,6 @@ jobs:
             notes     = "Auto-update"
           } | ConvertTo-Json -Depth 4
           Set-Content latest.json $json -Encoding UTF8
-
           git config user.name  "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
           git add latest.json
