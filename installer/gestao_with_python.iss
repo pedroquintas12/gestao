@@ -5,7 +5,6 @@
 #endif
 #define MyAppPublisher "Workflow"
 
-
 [Setup]
 AppId={{B1A4A2F7-6C3E-4B28-990C-C6A1E6B19A01}}
 AppName={#MyAppName}
@@ -13,7 +12,7 @@ AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 DefaultDirName={pf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
-UninstallDisplayIcon={app}\launcher.exe
+UninstallDisplayIcon={app}\gui.exe
 OutputBaseFilename={#MyAppName}-Setup-{#MyAppVersion}
 Compression=lzma
 SolidCompression=yes
@@ -21,8 +20,10 @@ ArchitecturesInstallIn64BitMode=x64
 DisableDirPage=no
 DisableProgramGroupPage=yes
 PrivilegesRequired=admin
-CloseApplications=force             
-RestartApplications=no              
+
+; garantir fechamento de processos
+RestartApplications=no
+CloseApplications=force
 CloseApplicationsFilter=gui.exe;launcher.exe;python.exe;pythonw.exe;Gestao.exe
 
 [Languages]
@@ -43,19 +44,19 @@ Source: "..\helpers\*"; DestDir: "{app}\helpers"; Flags: recursesubdirs ignoreve
 Source: "..\routes\*"; DestDir: "{app}\routes"; Flags: recursesubdirs ignoreversion
 Source: "..\service\*"; DestDir: "{app}\service"; Flags: recursesubdirs ignoreversion
 Source: "..\utils\*"; DestDir: "{app}\utils"; Flags: recursesubdirs ignoreversion
-Source: "..\dist\gui.exe"; DestDir: "{app}"; Flags: ignoreversion
+
+; binários (com restartreplace e kill prévio)
+Source: "..\dist\gui.exe";      DestDir: "{app}"; DestName: "gui.exe";      Flags: ignoreversion restartreplace; BeforeInstall: KillRunningApps
+Source: "..\dist\launcher.exe"; DestDir: "{app}"; DestName: "launcher.exe"; Flags: ignoreversion restartreplace; BeforeInstall: KillRunningApps
 
 ; env.example vai junto (sem segredos)
 Source: "..\env.example"; DestDir: "{app}"; DestName: "env.example"; Flags: ignoreversion
-
-; launcher.exe (gerado pelo PyInstaller em .\dist\)
-Source: "..\dist\launcher.exe"; DestDir: "{app}"; DestName: "launcher.exe"; Flags: ignoreversion
 
 ; instalador offline do Python 3.12 x64
 Source: ".\binaries\python-3.12.6-amd64.exe"; DestDir: "{tmp}"; DestName: "python-installer.exe"; Flags: deleteafterinstall
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\gui.exe"; WorkingDir: "{app}"
+Name: "{group}\{#MyAppName}";         Filename: "{app}\gui.exe"; WorkingDir: "{app}"
 Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\gui.exe"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Tasks]
@@ -74,7 +75,11 @@ Filename: "{app}\venv\Scripts\python.exe"; Parameters: "-m pip install --upgrade
 ; 4) Instala dependências do projeto
 Filename: "{app}\venv\Scripts\pip.exe"; Parameters: "install -r ""{app}\requirements.txt"""; Flags: runhidden waituntilterminated
 
-Filename: "{app}\gui.exe"; Description: "Iniciar Gestao (GUI)"; Flags: nowait postinstall skipifsilent
+; 5a) INTERATIVO: só mostra o checkbox quando NÃO estiver em /SILENT
+Filename: "{app}\gui.exe"; Description: "Iniciar Gestao (GUI)"; Flags: nowait postinstall runasoriginaluser; Check: not WizardSilent
+
+; 5b) SILENCIOSO: em /SILENT ou /VERYSILENT, abre a GUI no final com pequeno atraso
+Filename: "{cmd}"; Parameters: "/c ping -n 2 127.0.0.1 > nul & start """" ""{app}\gui.exe"""; Flags: nowait runasoriginaluser; Check: WizardSilent
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\venv\Lib\site-packages\pip\_vendor\distlib\__pycache__"
@@ -91,10 +96,27 @@ begin
     ForceDirectories(Dir);
 end;
 
+procedure KillRunningApps;
+var
+  RC: Integer;
+begin
+  { fecha possíveis travas – não mata o próprio instalador }
+  Exec(ExpandConstant('{cmd}'), '/c taskkill /IM gui.exe /F',       '', SW_HIDE, ewWaitUntilTerminated, RC);
+  Exec(ExpandConstant('{cmd}'), '/c taskkill /IM launcher.exe /F',  '', SW_HIDE, ewWaitUntilTerminated, RC);
+  Exec(ExpandConstant('{cmd}'), '/c taskkill /IM python.exe /F',    '', SW_HIDE, ewWaitUntilTerminated, RC);
+  Exec(ExpandConstant('{cmd}'), '/c taskkill /IM pythonw.exe /F',   '', SW_HIDE, ewWaitUntilTerminated, RC);
+  Exec(ExpandConstant('{cmd}'), '/c taskkill /IM Gestao.exe /F',    '', SW_HIDE, ewWaitUntilTerminated, RC);
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   AppDataDir, EnvPath, ExampleSrc, OldEnvInApp: string;
 begin
+  { kill redundante logo ao entrar na fase de instalação }
+  if CurStep = ssInstall then
+    KillRunningApps;
+
+  { pós-instalação: migra/cria .env no AppData }
   if CurStep = ssPostInstall then
   begin
     AppDataDir := GetLocalAppData() + '\Gestao';
@@ -104,17 +126,15 @@ begin
 
     EnsureDirExists(AppDataDir);
 
-    { Migra .env antigo da pasta do app para AppData (uma vez) }
     if FileExists(OldEnvInApp) then
     begin
       try
-        FileCopy(OldEnvInApp, EnvPath, False);  { False = não sobrescreve se já existir }
+        FileCopy(OldEnvInApp, EnvPath, False);
         DeleteFile(OldEnvInApp);
       except
       end;
     end;
 
-    { Cria .env a partir do modelo se ainda não existir no AppData }
     if (not FileExists(EnvPath)) and FileExists(ExampleSrc) then
     begin
       try

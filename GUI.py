@@ -1,6 +1,5 @@
 # GUI.py
 # Gestao - Atualização/Inicialização com GUI + aviso de update
-# Requisitos: Python 3.12+, Tkinter (Windows já tem), internet para checar update (opcional)
 
 import subprocess
 import threading
@@ -15,23 +14,30 @@ from tkinter import ttk
 import urllib.request, urllib.error
 import json
 import tempfile
-# import hashlib  # (opcional) para validar SHA-256 do instalador
+import ctypes  # para UAC (elevação)
 
-APP_URL = "http://127.0.0.1:5000"             
-HEALTH_URL = APP_URL + "/"                   
-HEALTH_TIMEOUT_S = 25                         
+APP_URL = "http://127.0.0.1:5000"
+HEALTH_URL = APP_URL + "/"
+HEALTH_TIMEOUT_S = 25
 
+# versão atual (gerada no workflow em version.py)
 try:
     from version import __version__ as CURRENT_VERSION
 except Exception:
     CURRENT_VERSION = "0.0.0"
 
+# onde checar a última versão
 LATEST_JSON_URL = "https://raw.githubusercontent.com/pedroquintas12/gestao/refs/heads/main/latest.json"
 
-# Parâmetros do instalador Inno Setup para atualização
-INSTALLER_ARGS = ["/VERYSILENT", "/NORESTART"]
+# args padrão do instalador (modo silencioso)
+INSTALLER_ARGS_SILENT = ["/VERYSILENT", "/NORESTART", "/CLOSEAPPLICATIONS"]
+# args com UI (para fallback e diagnóstico)
+INSTALLER_ARGS_UI = ["/NORESTART", "/CLOSEAPPLICATIONS"]
 
-# Passos de preparação/instalação locais antes de iniciar
+# processos do sistema a encerrar (NÃO inclua a própria GUI aqui!)
+KILL_IMAGES = ["launcher.exe", "python.exe", "pythonw.exe", "Gestao.exe"]
+
+# passos antes do servidor subir
 STEPS = [
     ("Verificando ambiente", 'echo Verificando ambiente...'),
     ("Atualizando pip",       r'.\venv\Scripts\python.exe -m pip install --upgrade pip'),
@@ -39,8 +45,9 @@ STEPS = [
     ("Iniciando servidor",    r'.\venv\Scripts\python.exe main.py'),
 ]
 
+
 def _parse_ver(v: str):
-    """Converte '1.2.3' -> tupla comparável (1,2,3). Imune a strings vazias."""
+    """Converte '1.2.3' -> (1,2,3) para comparação segura."""
     v = (v or "").strip()
     if not v:
         return (0,)
@@ -49,6 +56,18 @@ def _parse_ver(v: str):
         parts.append(int(p) if p.isdigit() else 0)
     return tuple(parts)
 
+
+def launch_elevated(exe_path: str, args_list: list[str]) -> bool:
+    """Executa EXE elevado via UAC. Retorna True se iniciou."""
+    params = " ".join(args_list)
+    workdir = os.path.dirname(exe_path) or None
+    try:
+        rc = ctypes.windll.shell32.ShellExecuteW(None, "runas", exe_path, params, workdir, 1)
+        return rc > 32
+    except Exception:
+        return False
+
+
 class UpdaterGUI(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -56,9 +75,7 @@ class UpdaterGUI(tk.Tk):
         self.geometry("860x560")
         self.minsize(760, 500)
 
-        # =========================
-        # BARRA DE ATUALIZAÇÃO (oculta no início)
-        # =========================
+        # ===== Barra de atualização (oculta no início)
         self.update_bar = ttk.Frame(self)
         self.update_bar.pack(fill="x", padx=12, pady=(10, 0))
         self.update_bar.pack_forget()
@@ -69,9 +86,7 @@ class UpdaterGUI(tk.Tk):
         self.btn_update = ttk.Button(self.update_bar, text="Atualizar agora", command=self.on_update_click)
         self.btn_update.pack(side="right")
 
-        # =========================
-        # Cabeçalho / Progresso
-        # =========================
+        # ===== Cabeçalho / Progresso
         self.lbl_title = ttk.Label(self, text="Atualizando / Preparando o sistema...", font=("Segoe UI", 14, "bold"))
         self.lbl_title.pack(pady=(16, 6))
 
@@ -83,9 +98,7 @@ class UpdaterGUI(tk.Tk):
         self.lbl_percent = ttk.Label(self, text="0%")
         self.lbl_percent.pack(pady=(4, 8))
 
-        # =========================
-        # Log estilo “terminal”
-        # =========================
+        # ===== Log tipo terminal
         frm_log = ttk.Frame(self)
         frm_log.pack(fill="both", expand=True, padx=12, pady=8)
 
@@ -96,9 +109,7 @@ class UpdaterGUI(tk.Tk):
         self.scroll.pack(side="right", fill="y")
         self.txt.configure(yscrollcommand=self.scroll.set)
 
-        # =========================
-        # Rodapé (botões)
-        # =========================
+        # ===== Rodapé
         frm_btn = ttk.Frame(self)
         frm_btn.pack(fill="x", padx=12, pady=10)
 
@@ -108,19 +119,19 @@ class UpdaterGUI(tk.Tk):
         self.btn_close = ttk.Button(frm_btn, text="Fechar", command=self.on_close)
         self.btn_close.pack(side="right")
 
-        # Estado interno
+        # ===== Estado
         self.log_queue = queue.Queue()
         self.latest_installer_url = None
-        self.latest_meta = None  # guarda latest.json inteiro (se quiser validar sha256, etc.)
+        self.latest_meta = None
+        self.server_proc: subprocess.Popen | None = None
 
-        # Threads
+        # ===== Threads
         self.worker = threading.Thread(target=self.run_steps, daemon=True)
         self.worker.start()
 
-        # Timers/UI
         self.after(100, self.drain_log_queue)
 
-        # Checagem de atualização em background
+        # checagem de update em background
         threading.Thread(target=self.check_for_update, daemon=True).start()
 
     # ---------- UI helpers ----------
@@ -173,6 +184,7 @@ class UpdaterGUI(tk.Tk):
                         encoding='utf-8',
                         errors='replace'
                     )
+                    self.server_proc = proc
 
                     start = time.time()
                     while time.time() - start < HEALTH_TIMEOUT_S:
@@ -183,7 +195,6 @@ class UpdaterGUI(tk.Tk):
                                 line = ""
                             if line:
                                 self.safe_log(line)
-
                         try:
                             with urllib.request.urlopen(HEALTH_URL, timeout=2):
                                 self.safe_log("\n✔ Servidor respondeu ao health-check.\n")
@@ -191,13 +202,11 @@ class UpdaterGUI(tk.Tk):
                         except Exception:
                             time.sleep(0.3)
 
-                    # marca a etapa como concluída
                     self.safe_set_progress((idx / total) * 100.0)
                     self.safe_set_title("Tudo pronto!")
                     self.safe_enable_open_button()
                     self.safe_log("\n✔ Inicialização concluída (servidor em background).\n")
 
-                    # Continua “tail” dos logs do servidor
                     threading.Thread(target=self._tail_process, args=(proc,), daemon=True).start()
                     return
                 except Exception as e:
@@ -205,7 +214,7 @@ class UpdaterGUI(tk.Tk):
                     self.safe_set_title("Falha ao iniciar servidor")
                     return
 
-            # Passos normais
+            # passos normais
             try:
                 proc = subprocess.Popen(
                     cmd,
@@ -232,13 +241,12 @@ class UpdaterGUI(tk.Tk):
 
             self.safe_set_progress((idx / total) * 100.0)
 
-        # Caso haja passos depois
         self.safe_set_title("Tudo pronto!")
         self.safe_set_progress(100.0)
         self.safe_enable_open_button()
         self.safe_log("\n✔ Concluído.\n")
 
-    # ---------- Tail contínuo dos logs do servidor ----------
+    # ---------- Tail contínuo ----------
     def _tail_process(self, proc: subprocess.Popen):
         try:
             while True:
@@ -259,17 +267,10 @@ class UpdaterGUI(tk.Tk):
                 self.safe_log(f"\n[servidor finalizou com código {code}]\n")
 
     # ---------- Thread-safe setters ----------
-    def safe_log(self, msg: str):
-        self.log_queue.put(msg)
-
-    def safe_set_progress(self, pct: float):
-        self.after(0, lambda: self.set_progress(pct))
-
-    def safe_set_title(self, title: str):
-        self.after(0, lambda: self.set_title(title))
-
-    def safe_enable_open_button(self):
-        self.after(0, lambda: self.btn_open.config(state="normal"))
+    def safe_log(self, msg: str): self.log_queue.put(msg)
+    def safe_set_progress(self, pct: float): self.after(0, lambda: self.set_progress(pct))
+    def safe_set_title(self, title: str): self.after(0, lambda: self.set_title(title))
+    def safe_enable_open_button(self): self.after(0, lambda: self.btn_open.config(state="normal"))
 
     # ---------- util ----------
     def get_app_root(self) -> str:
@@ -277,11 +278,51 @@ class UpdaterGUI(tk.Tk):
             return os.path.dirname(sys.executable)
         return str(Path(__file__).resolve().parent)
 
+    # ---------- encerramento total (menos a GUI) ----------
+    def _run_quiet(self, cmd: str):
+        try:
+            subprocess.run(cmd, shell=True, check=False,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception:
+            pass
+
+    def kill_everything(self):
+        """Encerra o servidor iniciado pela GUI e mata processos conhecidos (exceto esta GUI)."""
+        self.safe_log("\nEncerrando processos do sistema...\n")
+
+        # 1) encerra o servidor que a GUI iniciou
+        try:
+            if self.server_proc and (self.server_proc.poll() is None):
+                self.safe_log("• Finalizando processo do servidor iniciado pela GUI...\n")
+                try:
+                    self.server_proc.terminate()
+                except Exception:
+                    pass
+                for _ in range(10):
+                    if self.server_proc.poll() is not None:
+                        break
+                    time.sleep(0.1)
+                if self.server_proc.poll() is None:
+                    try:
+                        self.safe_log("• Servidor resistente — aplicando kill()...\n")
+                        self.server_proc.kill()
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
+        # 2) mata processos por imagem (com filhos)
+        for img in KILL_IMAGES:
+            self._run_quiet(f'taskkill /IM {img} /F /T')
+
+        time.sleep(0.4)  # tempo para liberar handles
+        self.safe_log("• Processos encerrados (ou não encontrados).\n")
+
     # =========================
-    # UPDATE: checar e baixar
+    # UPDATE
     # =========================
     def check_for_update(self):
-        """Consulta latest.json e exibe a barra se houver versão nova."""
+        """Consulta latest.json e mostra aviso se houver versão mais nova."""
         try:
             req = urllib.request.Request(LATEST_JSON_URL, headers={"User-Agent": "Gestao-Updater"})
             with urllib.request.urlopen(req, timeout=10) as resp:
@@ -308,12 +349,14 @@ class UpdaterGUI(tk.Tk):
         threading.Thread(target=self.download_and_run_installer, daemon=True).start()
 
     def download_and_run_installer(self):
+        """Baixa o instalador, encerra tudo, tenta iniciar elevado (silencioso); se falhar, inicia com UI e log; encerra a GUI."""
         url = self.latest_installer_url
         try:
             tmpdir = tempfile.gettempdir()
             basename = os.path.basename(url) or "Gestao-Setup.exe"
             dst = os.path.join(tmpdir, basename)
 
+            # 1) Download
             with urllib.request.urlopen(url, timeout=120) as r, open(dst, "wb") as f:
                 total = int(r.headers.get("Content-Length") or 0)
                 read = 0
@@ -329,27 +372,46 @@ class UpdaterGUI(tk.Tk):
 
             self.safe_log(f"\nDownload concluído: {dst}\n")
 
-            # (Opcional) validar SHA-256 usando self.latest_meta["windows"]["sha256"]
-            # if self.latest_meta:
-            #     expected = str(self.latest_meta.get("windows", {}).get("sha256") or "").lower()
-            #     if expected:
-            #         got = hashlib.sha256(open(dst, "rb").read()).hexdigest().lower()
-            #         if got != expected:
-            #             raise Exception("SHA-256 inválido para o instalador baixado.")
+            # 2) Mata tudo (menos esta GUI)
+            self.safe_set_title("Encerrando o sistema para atualizar...")
+            self.kill_everything()
+            time.sleep(0.5)
 
+            # 3) Monta args com LOG em %TEMP%
+            log_path = os.path.join(tmpdir, "gestao_installer.log")
+            args_silent = INSTALLER_ARGS_SILENT + [f"/LOG={log_path}"]
+            args_ui = INSTALLER_ARGS_UI + [f"/LOG={log_path}"]
+
+            # 4) Tenta iniciar ELEVADO (silencioso)
             self.safe_set_title("Iniciando atualizador...")
-            args = [dst] + INSTALLER_ARGS
-            subprocess.Popen(args, shell=False)
-            self.safe_log("Instalador iniciado. Siga as instruções.\n")
-            # opcional: fechar GUI após iniciar instalador
-            # self.after(1000, self.on_close)
+            started_elev = launch_elevated(dst, args_silent)
+
+            # fallback com UI (para ver mensagens se UAC/elevação falhar)
+            if not started_elev:
+                try:
+                    subprocess.Popen([dst] + args_ui, shell=False)
+                    self.safe_log("\n(Aviso) UAC elevado falhou. Iniciando instalador com interface.\n")
+                except Exception as e:
+                    self.safe_log(f"\nFalha ao iniciar instalador: {e}\nLog: {log_path}\n")
+                    self.after(0, lambda: self.btn_update.config(state="normal"))
+                    return
+
+            # 5) Dá um tempo para o instalador abrir de fato
+            time.sleep(1.5 if started_elev else 2.5)
+
+            # 6) Fecha a GUI (libera qualquer lock residual)
+            self.safe_set_progress(100.0)
+            self.safe_log(f"Instalador iniciado. (Log: {log_path}) Encerrando a aplicação...\n")
+            time.sleep(0.2)
+            os._exit(0)
+
         except Exception as e:
             self.safe_log(f"\nErro ao atualizar: {e}\n")
             self.after(0, lambda: self.btn_update.config(state="normal"))
 
+
 if __name__ == "__main__":
     try:
-        import ctypes
         ctypes.windll.shcore.SetProcessDpiAwareness(1)
     except Exception:
         pass
