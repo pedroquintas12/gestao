@@ -4,11 +4,12 @@ from sqlalchemy.exc import SQLAlchemyError, IntegrityError, DataError, InvalidRe
 
 from flask import jsonify
 from config.db import db
-from config.logger import logger
+from config.logger import get_logger
 from utils.api_error import api_error
 from model.clienteModel import cliente
 from model.veiculoModel import veiculo
 
+logger = get_logger(__name__)
 
 class veiculoService:
 

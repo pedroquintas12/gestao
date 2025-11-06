@@ -2,11 +2,12 @@
 from typing import Optional, Tuple
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError, DataError, InvalidRequestError
 
-from config.logger import logger
+from config.logger import get_logger
 from config.db import db
 from utils.api_error import api_error
 from model.servicoModel import servico
 
+logger = get_logger(__name__)
 
 class servicoService:
     @staticmethod

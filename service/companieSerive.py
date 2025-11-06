@@ -7,7 +7,7 @@ from typing import Any
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError, DataError, InvalidRequestError
 
 from config.db import db
-from config.logger import logger
+from config.logger import get_logger
 from utils.api_error import api_error
 from model.companieModel import companie
 from app.erros import ValidationError
@@ -15,6 +15,7 @@ from app.erros import ValidationError
 DATA_URL_RE = re.compile(r'^data:(?P<mime>[\w/+.-]+);base64,(?P<b64>.+)$')
 MAX_IMG_BYTES = 10 * 1024 * 1024  # 10 MB
 
+logger = get_logger(__name__)
 
 def _set_image_from_payload(c: companie, data: dict[str, Any]):
     """Aceita 'imagem' como dataURL base64 e compacta com gzip."""

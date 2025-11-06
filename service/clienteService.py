@@ -3,11 +3,11 @@ from sqlalchemy import or_
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError, DataError, InvalidRequestError
 
 from config.db import db
-from config.logger import logger
+from config.logger import get_logger
 from utils.api_error import api_error
 from model.clienteModel import cliente
 
-
+logger = get_logger(__name__)
 class clienteService:
 
     @staticmethod

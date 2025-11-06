@@ -8,7 +8,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError, DataError, InvalidRequestError
 
 from config.db import db
-from config.logger import logger  # ✅ logger central da aplicação
+from config.logger import get_logger  
 from model.companieModel import companie
 from utils.api_error import api_error
 from model.vendaModel import venda as Venda, VendaItem
@@ -18,6 +18,7 @@ from model.veiculoModel import veiculo as Veiculo
 from model.caixaModel import caixa_lancamento as Caixa
 from enums.forma_pagamentoEnum import FormaPagamento
 
+logger = get_logger(__name__)
 
 def _num(v):
     try:

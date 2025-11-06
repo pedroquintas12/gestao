@@ -3,7 +3,8 @@ from flask import jsonify, current_app
 from werkzeug.exceptions import HTTPException
 from sqlalchemy.exc import SQLAlchemyError
 import traceback
-
+from config.logger import get_logger
+logger = get_logger(__name__)
 
 class ValidationError(ValueError):
     def __init__(self, message, field=None):
@@ -28,22 +29,23 @@ def register_error_handlers(app):
     # Validation do domínio
     @app.errorhandler(ValidationError)
     def _handle_validation(err: ValidationError):
+        logger.exception("ValidationError: %s", err)
         return _json_error("validation_error", str(err), 400, field=getattr(err, "field", None))
 
     # HTTPException (404, 405, 413, etc) -> JSON
     @app.errorhandler(HTTPException)
     def _handle_http(err: HTTPException):
-        # err.description já traz a mensagem “bonita”
+        logger.exception("HTTPException: %s", err)
         return _json_error("http_error", err.description, err.code or 500)
 
     # Erros de banco (padroniza em 500; logs mantêm detalhes)
     @app.errorhandler(SQLAlchemyError)
     def _handle_sqlalchemy(err: SQLAlchemyError):
-        current_app.logger.exception("SQLAlchemyError")
+        logger.exception("SQLAlchemyError: %s", err)
         return _json_error("database_error", "Erro de banco de dados.", 500)
 
     # Qualquer outro erro não mapeado
     @app.errorhandler(Exception)
     def _handle_generic(err):
-        # antes: return _json_error("internal_error", "Erro interno do servidor.", 500, extra=err)
+        logger.exception("Unhandled Exception: %s", err)
         return _json_error("internal_error", "Erro interno do servidor.", 500, extra=str(err))
