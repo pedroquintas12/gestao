@@ -23,7 +23,7 @@ DisableProgramGroupPage=yes
 PrivilegesRequired=admin
 CloseApplications=force             
 RestartApplications=no              
-CloseApplicationsFilter=launcher.exe;python.exe;pythonw.exe;Gestao.exe
+CloseApplicationsFilter=gui.exe;launcher.exe;python.exe;pythonw.exe;Gestao.exe
 
 [Languages]
 Name: "portuguese"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
