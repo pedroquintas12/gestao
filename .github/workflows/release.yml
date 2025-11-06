@@ -71,13 +71,7 @@ jobs:
       - name: Build gui.exe (com ícone)
         shell: pwsh
         run: |
-          $ico = "public\favicon.ico"  # use um .ico válido
-          if (Test-Path $ico) {
-            python -m PyInstaller --onefile --noconsole --icon $ico --name gui GUI.py
-          } else {
-            echo "WARN: Icon $ico não encontrado; construindo sem ícone."
-            python -m PyInstaller --onefile --noconsole --name gui GUI.py
-          }
+            python -m PyInstaller --onefile --noconsole --icon public\favicon.ico --name gui GUI.py
 
       - name: Compilar instalador (Inno Setup)
         shell: pwsh
