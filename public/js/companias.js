@@ -121,7 +121,7 @@ form.addEventListener("submit", async (ev) => {
     }
 
     // sucesso -> limpar form?
-    showToast("Empresa criada com sucesso!", "success");
+    showToast("Empresa criada com sucesso! Redirecionando.....", "success");
     console.log("Criada:", data);
 
     // Se quiser limpar o form:
@@ -130,7 +130,10 @@ form.addEventListener("submit", async (ev) => {
     previewImg.style.display = "none";
     previewTxt.style.display = "block";
     previewTxt.textContent = "Nenhuma imagem selecionada";
-
+    setTimeout(() => {
+      // use replace para não voltar pro form ao apertar "Voltar"
+      window.location.replace("/login");
+    }, 1200);
   } catch (err) {
     console.error(err);
     showToast("Falha de rede/conexão.", "error");

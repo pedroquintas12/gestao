@@ -1,63 +1,99 @@
-
-from sqlalchemy import or_
 from typing import Optional, Tuple
-from flask import jsonify
-from model.clienteModel import cliente
-from config.db import db
-class clienteService():
-    def valid_payload(data :dict) -> tuple[dict,dict]:
-        err= {}
-        out= {}
+from sqlalchemy import or_
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError, DataError, InvalidRequestError
 
-        nome = data.get("nome")
-        numero = data.get("numero")
+from config.db import db
+from config.logger import logger
+from utils.api_error import api_error
+from model.clienteModel import cliente
+
+
+class clienteService:
+
+    @staticmethod
+    def valid_payload(data: dict) -> tuple[dict, dict]:
+        err, out = {}, {}
+
+        nome   = (data.get("nome") or "").strip()
+        numero = (data.get("numero") or "").strip()
+        cpf    = (data.get("cpf") or "").strip()
 
         if not nome:
-            err[nome] = "Campo 'nome' Obrigatorio"
+            err["nome"] = "Campo 'nome' Obrigatório"
 
-        cpf = data.get("cpf")
-        
         out.update({
             "nome": nome,
-            "cpf": cpf,
-            "numero":numero
+            "cpf": cpf or None,       # mantém None se vazio
+            "numero": numero or None, # idem
         })
         return out, err
-            
 
     @staticmethod
-    def create_cliente(data: dict) -> cliente:
-        payload,err = clienteService.valid_payload(data)
-        if err:
-            from utils.api_error import api_error
-            return api_error(400,"erro ao validar cliente", err)
+    def create_cliente(data: dict) -> cliente | dict:
         try:
-            app = cliente(**payload)
-            db.session.add(app)
-            db.session.commit()
-            return app
-        except Exception as e:
-            from utils.api_error import api_error
-            return api_error(400,"erro ao criar cliente", details=e)
-    
+            payload, err = clienteService.valid_payload(data)
+            if err:
+                return api_error(400, "Erro ao validar cliente", details=err)
 
-    @staticmethod
-    def update_cliente(cid:int, data:dict) -> cliente:
-        c = cliente.query.get_or_404(cid)
-        payload,err = clienteService.valid_payload(data)
-        if err:
-            from utils.api_error import api_error
-            return api_error(400,"erro ao validar cliente", err)
-        try:
-            for k,v in payload.items():
-                setattr(c,k,v)
-            db.session.add(c)
+            obj = cliente(**payload)
+            db.session.add(obj)
             db.session.commit()
-            return jsonify({c.to_dict()}),200
+            return obj
+
+        except (IntegrityError, DataError, InvalidRequestError) as e:
+            db.session.rollback()
+            logger.exception("Erro de dados ao criar cliente: %s", e)
+            return api_error(400, "Dados inválidos ao criar cliente",
+                             details=str(e.orig) if getattr(e, "orig", None) else str(e))
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            logger.exception("Erro SQLAlchemy ao criar cliente: %s", e)
+            return api_error(500, "Falha no banco ao criar cliente", details=str(e))
         except Exception as e:
             db.session.rollback()
-            return api_error(500, "Falha ao atualizar cliente", {"detail": str(e)})
-        
+            logger.exception("Erro inesperado ao criar cliente: %s", e)
+            return api_error(500, f"Erro inesperado ao criar cliente: {e}")
+
+    @staticmethod
+    def update_cliente(cid: int, data: dict) -> cliente | dict:
+        try:
+            c = cliente.query.get(cid)
+            if not c or getattr(c, "deleted", False):
+                return api_error(404, "Cliente não encontrado")
+
+            # merge dos dados atuais + novos (patch-friendly)
+            merged = {
+                "nome": c.nome,
+                "cpf": getattr(c, "cpf", None),
+                "numero": getattr(c, "numero", None),
+                **(data or {})
+            }
+            payload, err = clienteService.valid_payload(merged)
+            if err:
+                return api_error(400, "Erro ao validar cliente", details=err)
+
+            # aplica alterações
+            c.nome   = payload["nome"]
+            c.cpf    = payload.get("cpf")
+            c.numero = payload.get("numero")
+
+            db.session.commit()
+            return c
+
+        except (IntegrityError, DataError, InvalidRequestError) as e:
+            db.session.rollback()
+            logger.exception("Erro de dados ao atualizar cliente (id=%s): %s", cid, e)
+            return api_error(400, "Dados inválidos ao atualizar cliente",
+                             details=str(e.orig) if getattr(e, "orig", None) else str(e))
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            logger.exception("Erro SQLAlchemy ao atualizar cliente (id=%s): %s", cid, e)
+            return api_error(500, "Falha no banco ao atualizar cliente", details=str(e))
+        except Exception as e:
+            db.session.rollback()
+            logger.exception("Erro inesperado ao atualizar cliente (id=%s): %s", cid, e)
+            return api_error(500, f"Falha ao atualizar cliente: {e}")
+
     @staticmethod
     def list_cliente(
         q: Optional[str] = None,
@@ -69,48 +105,71 @@ class clienteService():
         - itens: lista de clientes (já paginada)
         - total_filtrado: total de registros após filtros (sem paginação)
         """
-        # base query
-        query = cliente.query.filter_by(deleted=False)
+        try:
+            query = cliente.query.filter_by(deleted=False)
 
-        # filtro de busca
-        if q:
-            like_query = f"%{q.strip()}%"
-            query = query.filter(or_(
-                cliente.nome.ilike(like_query),
-                cliente.cpf.ilike(like_query),
-                cliente.numero.ilike(like_query),
-            ))
+            if q:
+                like_query = f"%{q.strip()}%"
+                query = query.filter(or_(
+                    cliente.nome.ilike(like_query),
+                    cliente.cpf.ilike(like_query),
+                    cliente.numero.ilike(like_query),
+                ))
 
-        query = query.order_by(cliente.id_cliente.desc())
+            query = query.order_by(cliente.id_cliente.desc())
+            total = query.count()
 
-        total = query.count()
+            if page and per_page:
+                try:
+                    page = max(1, int(page))
+                    per_page = max(1, min(int(per_page), 100))
+                except Exception:
+                    page, per_page = 1, 24
 
-        if page and per_page:
-            page = max(1, int(page))
-            per_page = max(1, min(int(per_page), 100))
-            itens = query.offset((page - 1) * per_page).limit(per_page).all()
-        else:
-            itens = query.all()
+                itens = query.offset((page - 1) * per_page).limit(per_page).all()
+            else:
+                itens = query.all()
 
-        return itens, total
-        
-        
+            return itens, total
 
+        except SQLAlchemyError as e:
+            logger.exception("Erro SQLAlchemy ao listar clientes: %s", e)
+            return [], 0
+        except Exception as e:
+            logger.exception("Erro inesperado ao listar clientes: %s", e)
+            return [], 0
+
+    @staticmethod
     def get(id_cliente: int):
-        obj = cliente.query.get(id_cliente)
-
-        if not obj or obj.deleted != 0:
-            from utils.api_error import api_error
-            return api_error(404, "Cliente não encontrado")
-        return obj
+        try:
+            obj = cliente.query.get(id_cliente)
+            if not obj or getattr(obj, "deleted", False):
+                return api_error(404, "Cliente não encontrado")
+            return obj
+        except SQLAlchemyError as e:
+            logger.exception("Erro SQLAlchemy ao buscar cliente (id=%s): %s", id_cliente, e)
+            return api_error(500, "Falha no banco ao buscar cliente", details=str(e))
+        except Exception as e:
+            logger.exception("Erro inesperado ao buscar cliente (id=%s): %s", id_cliente, e)
+            return api_error(500, f"Erro ao buscar cliente: {e}")
 
     @staticmethod
     def delete(id_cliente: int):
-        obj = cliente.query.get(id_cliente)
-        if not obj:
-            from utils.api_error import api_error
-            return api_error(404, "Cliente não encontrado")
-        obj.deleted = id_cliente
-        db.session.commit()
-        return {"deleted": True}
+        try:
+            obj = cliente.query.get(id_cliente)
+            if not obj or getattr(obj, "deleted", False):
+                return api_error(404, "Cliente não encontrado")
 
+            # soft delete
+            obj.deleted = True
+            db.session.commit()
+            return {"deleted": True}
+
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            logger.exception("Erro SQLAlchemy ao deletar cliente (id=%s): %s", id_cliente, e)
+            return api_error(500, "Falha no banco ao deletar cliente", details=str(e))
+        except Exception as e:
+            db.session.rollback()
+            logger.exception("Erro inesperado ao deletar cliente (id=%s): %s", id_cliente, e)
+            return api_error(500, f"Erro ao deletar cliente: {e}")

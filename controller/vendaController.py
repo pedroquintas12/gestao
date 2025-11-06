@@ -4,6 +4,8 @@ from math import ceil
 from flask import Blueprint, request, jsonify
 from helpers.service_resulte_helper import service_result_to_response
 from service.vendasService import vendaService
+from config.logger import logger
+
 def _parse_ymd_to_dt(s: str | None):
     """Converte 'YYYY-MM-DD' -> datetime(YYYY,MM,DD, 00:00:00)."""
     if not s:
