@@ -43,7 +43,7 @@ Source: "..\helpers\*"; DestDir: "{app}\helpers"; Flags: recursesubdirs ignoreve
 Source: "..\routes\*"; DestDir: "{app}\routes"; Flags: recursesubdirs ignoreversion
 Source: "..\service\*"; DestDir: "{app}\service"; Flags: recursesubdirs ignoreversion
 Source: "..\utils\*"; DestDir: "{app}\utils"; Flags: recursesubdirs ignoreversion
-
+Source: "..\dist\gui.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 ; env.example vai junto (sem segredos)
 Source: "..\env.example"; DestDir: "{app}"; DestName: "env.example"; Flags: ignoreversion
@@ -55,8 +55,8 @@ Source: "..\dist\launcher.exe"; DestDir: "{app}"; DestName: "launcher.exe"; Flag
 Source: ".\binaries\python-3.12.6-amd64.exe"; DestDir: "{tmp}"; DestName: "python-installer.exe"; Flags: deleteafterinstall
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\launcher.exe"; WorkingDir: "{app}"
-Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\launcher.exe"; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{group}\{#MyAppName}"; Filename: "{app}\gui.exe"; WorkingDir: "{app}"
+Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\gui.exe"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Tasks]
 Name: "desktopicon"; Description: "Criar atalho na Área de Trabalho"; GroupDescription: "Atalhos:"; Flags: unchecked
@@ -74,8 +74,7 @@ Filename: "{app}\venv\Scripts\python.exe"; Parameters: "-m pip install --upgrade
 ; 4) Instala dependências do projeto
 Filename: "{app}\venv\Scripts\pip.exe"; Parameters: "install -r ""{app}\requirements.txt"""; Flags: runhidden waituntilterminated
 
-; 5) Abre o app (launcher) pós-instalação
-Filename: "{app}\launcher.exe"; Description: "Iniciar {#MyAppName}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\gui.exe"; Description: "Iniciar Gestao (GUI)"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\venv\Lib\site-packages\pip\_vendor\distlib\__pycache__"
