@@ -72,22 +72,31 @@ jobs:
         run: |
           python -m pip install -U pip pyinstaller pillow
 
-      # Converte o favicon para um .ico válido multi-res
       - name: Gerar app.ico a partir do favicon
         shell: pwsh
         run: |
-          $src = "public\favicon.ico"   # pode ser .png também
-          $dst = "assets\app.ico"
-          if (!(Test-Path $src)) { throw "Favicon não encontrado em $src" }
-          python - << 'PY'
+          New-Item -ItemType Directory -Force -Path assets | Out-Null
+          $src = "public\favicon.ico"
+          if (-not (Test-Path $src)) { $src = "public\favicon.png" }
+          if (-not (Test-Path $src)) { throw "Favicon não encontrado (public\favicon.ico ou public\favicon.png)" }
+
+          $py = @"
           from PIL import Image
-          import sys, os  
-          src = r"public\favicon.ico"
-          dst = r"assets\app.ico"
-          img = Image.open(src)            # abre .png ou .ico
-          img.save(dst, sizes=[(16,16),(32,32),(48,48),(64,64),(128,128),(256,256)])
-          print("ICO gerado em", dst)
-          PY
+          from pathlib import Path
+
+          src = Path(r'$src')
+          dst = Path(r'assets\app.ico')
+
+          img = Image.open(src)
+          # Gera .ico multi-res (16..256) mesmo se a origem já for .ico simples
+          sizes = [(16,16),(32,32),(48,48),(64,64),(128,128),(256,256)]
+          img.save(dst, sizes=sizes)
+          print('ICO gerado em', dst)
+          "@
+
+          Set-Content -Path gen_ico.py -Value $py -Encoding UTF8
+          python gen_ico.py
+          
       - name: Build gui.exe (com ícone)
         shell: pwsh
         run: |
