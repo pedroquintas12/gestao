@@ -1,9 +1,9 @@
 {
-  "mandatory": false,
+  "version": "0.4.1",
   "notes": "Auto-update",
-  "version": "0.4.0",
+  "mandatory": false,
   "windows": {
-    "installer_url": "https://github.com/pedroquintas12/gestao/releases/download/V0.4.0/Gestao-Setup-0.4.0.exe",
-    "sha256": "954DD1BF3AB49EFEF16BDC17E357F4107C166513EF805F1EFB8C4FB80B861706"
+    "sha256": "41EBDC395A17F1C3B140FBE68AAEE86E2F79B3D7FB80C654CE7CE5CEC12CFB41",
+    "installer_url": "https://github.com/pedroquintas12/gestao/releases/download/V0.4.1/Gestao-Setup-0.4.1.exe"
   }
 }
