@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="/public/favicon.ico" />
+
   <title>Gestão — Painel</title>
 
   <!-- Bootstrap 5 -->
@@ -21,65 +23,27 @@
 </head>
 <body>
 
-  <!-- SIDEBAR -->
-  <aside class="sidebar p-3">
-    <div class="sidebar-header d-flex align-items-center justify-content-between">
-      <div class="logo">
-        <span class="paw">G$</span>
-        <span class="logo-text">Gestão</span>
-      </div>
-      <button class="btn btn-sm btn-light d-lg-none" id="btnToggleSidebar" aria-label="Alternar menu">
-        <i class="bi bi-list"></i>
-      </button>
+<!-- SIDEBAR -->
+<aside class="sidebar p-3"
+       data-version="{{ version }}">
+  <div class="sidebar-header d-flex align-items-center justify-content-between">
+    <div class="logo">
+      <img src="/public/favicon.ico" alt="Logo" class="logo-img" style="width:40px;">
+      <span class="logo-text d-none d-lg-inline">{{ companie }}</span>
     </div>
+    <button class="btn btn-sm btn-light d-lg-none" id="btnToggleSidebar">☰</button>
+  </div>
 
-    <nav class="sidebar-nav mt-3" id="sidebar">
-      <ul id="menu" class="list-unstyled m-0 p-0">
-        <li>
-          <a href="#dashboard" class="nav-link active">
-            <i class="bi bi-speedometer2"></i>
-            <span class="label">Dashboard</span>
-          </a>
-        </li>
-        <li>
-          <a href="#clientes" class="nav-link">
-            <i class="bi bi-people"></i>
-            <span class="label">Clientes</span>
-          </a>
-        </li>
-        <li>
-          <a href="#veiculos" class="nav-link">
-            <i class="bi bi-car-front"></i>
-            <span class="label">Veículos</span>
-          </a>
-        </li>
-        <li>
-          <a href="#servicos" class="nav-link">
-            <i class="bi bi-wrench-adjustable"></i>
-            <span class="label">Serviços</span>
-          </a>
-        </li>
-        <li>
-          <a href="#vendas" class="nav-link">
-            <i class="bi bi-receipt"></i>
-            <span class="label">Vendas / Orçamentos</span>
-          </a>
-        </li>
-        <li>
-          <a href="#caixa" class="nav-link">
-            <i class="bi bi-cash-coin"></i>
-            <span class="label">Caixa do dia</span>
-          </a>
-        </li>
-        <li class="mt-3 border-top pt-3">
-          <a href="/logout" class="nav-link text-danger">
-            <i class="bi bi-box-arrow-right"></i>
-            <span class="label">Sair</span>
-          </a>
-        </li>
-      </ul>
-    </nav>
-  </aside>
+  <nav class="sidebar-nav mt-3" id="sidebar"></nav>
+
+  <!-- FOOTER fixo no fim -->
+  <div class="sidebar-footer small d-flex justify-content-between align-items-center pt-2">
+    <span class="text-truncate">Developed by Workspace</span>
+    <span id="sbVersion"></span>
+  </div>
+</aside>
+
+
 
   <!-- MAIN AREA -->
   <main class="main-content">
@@ -115,7 +79,7 @@
         </div>
       </div>
 
-      <div class="table-responsive">
+      <div class="table-wrap">
         <table class="table align-middle">
           <thead>
             <tr>
@@ -146,7 +110,7 @@
         </div>
       </div>
 
-      <div class="table-responsive">
+      <div class="table-wrap">
         <table class="table align-middle">
           <thead>
             <tr>
@@ -179,7 +143,7 @@
         </div>
       </div>
 
-      <div class="table-responsive">
+      <div class="table-wrap">
         <table class="table align-middle">
           <thead>
             <tr>
@@ -229,7 +193,7 @@
         </div>
       </div>
 
-      <div class="table-responsive mb-4">
+      <div class="table-wrap mb-4">
         <table class="table align-middle">
           <thead>
             <tr>
@@ -267,7 +231,7 @@
         <div class="small text-muted" id="cxPeriodoLabel"></div>
       </div>
 
-      <div class="table-responsive">
+      <div class="table-wrap">
         <table class="table align-middle">
           <thead>
             <tr>
@@ -565,7 +529,7 @@
             </div>
 
             <!-- tabela itens -->
-            <div class="table-responsive venda-itens-tablewrap">
+            <div class="venda-itens-tablewrap">
               <table class="table table-borderless align-middle venda-itens-table">
                 <thead>
                   <tr>

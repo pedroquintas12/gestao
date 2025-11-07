@@ -7,8 +7,8 @@
   --card: #ffffff;
   --text: #0f172a;
   --muted: #475569;
-  --primary: #FF914D;
-  --primary-600: #ff7d2e;
+  --primary: #0793ff;
+  --primary-600: #0793ff;
   --accent: #5BC0F8;
   --accent-100: #E6F5FE;
   --radius: 16px;
@@ -708,6 +708,57 @@ body {
 }
 
 /* ======================================= */
+/* ======= MODAL (Bootstrap override) ==== */
+/* ======================================= */
+
+/* Mantém comportamento do Bootstrap e evita quebrar cliques */
+.modal { padding: 0 !important;  z-index: 1200 !important; }
+
+/* Centralizado, largura responsiva e sem "pula-pula" */
+.modal .modal-dialog{
+  margin: 1.5rem auto;
+  width: auto;
+  max-width: 720px;
+  transform: none !important;   /* remove translação que desloca p/ topo */
+}
+
+/* Modal grande (ex.: edição de venda) */
+.modal-dialog.modal-xl{
+  max-width: 980px;
+}
+
+/* Conteúdo rola se ficar maior que a viewport */
+.modal .modal-content{
+  width: 100%;
+  border-radius: 14px;
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+}
+
+/* Centralização vertical usando a classe nativa */
+.modal-dialog-centered{
+  min-height: calc(100% - 3rem);
+  display: flex;
+  align-items: center;
+}
+
+/* Backdrop mais suave (opcional) */
+.modal-backdrop.show{ opacity: .45; }
+
+.modal-backdrop{ z-index: 1190 !important; }
+
+/* Responsivo */
+@media (max-width: 992px){
+  .modal-dialog.modal-xl{ max-width: 92vw; }
+}
+@media (max-width: 576px){
+  .modal .modal-dialog{ max-width: 95vw; margin: .75rem auto; }
+  .modal .modal-content{ border-radius: 12px; }
+}
+
+
+
+/* ======================================= */
 /* ============ RESPONSIVIDADE =========== */
 /* ======================================= */
 
@@ -760,7 +811,6 @@ body {
 
   .main-content {
     padding: 24px;
-    margin-left: 72px; /* pra não ficar por baixo da sidebar fixa */
   }
 }
 
@@ -813,7 +863,83 @@ body {
   }
 }
 
-/* esconder totalmente sidebar quando user apertar botão toggle */
-.sidebar.d-none {
-  display: none !important;
+/* ===== Desktop (≥992px): expandida por padrão ===== */
+.sidebar {
+  width: 270px;
+  transition: width .2s ease;
+}
+.main-content {transition: margin-left .2s ease; }
+
+/* toggle desktop: colapsada */
+.sidebar.collapsed { width: 64px; align-items: center; }
+.sidebar.collapsed .sidebar-header {
+  padding: 12px;
+  border-bottom: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+.sidebar.collapsed .logo-text { display: none !important; }
+.sidebar.collapsed .sidebar-nav a { justify-content: center; gap: 0; padding: 10px 8px; text-align: center; flex-direction: column; }
+.sidebar.collapsed .sidebar-nav a .label { display: none !important; }
+.sidebar.collapsed .nav-link i { font-size: 1.25rem; line-height: 1; }
+.sidebar.collapsed .sidebar-footer { padding: 8px 6px; }
+.sidebar.collapsed ~ .main-content { margin-left: 72px; } /* 64 + margem */
+
+/* Footer centralizado em todos estados */
+.sidebar-footer{
+  margin-top: auto;
+  width: 100%;
+  border-top: 1px solid var(--sidebar-hover);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--sidebar-text);
+}
+.sidebar-footer .text-truncate{ max-width: 100%; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#sbVersion{ font-size:11px; opacity:.85; }
+
+/* ===== Mobile (<992px): colapsada por padrão ===== */
+@media (max-width: 992px) {
+  .sidebar {
+    width: 64px;
+    align-items: center;
+  }
+  .sidebar-header {
+    padding: 12px;
+    border-bottom: 0;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .sidebar .logo-text { display: none !important; }
+  .sidebar-nav ul { padding: 8px 0; width: 100%; }
+  .sidebar-nav a { justify-content: center; gap: 0; padding: 10px 8px; text-align: center; flex-direction: column; line-height: 1; }
+  .sidebar-nav a .label { display: none !important; }
+  .nav-link i { font-size: 1.25rem; line-height: 1; }
+  .sidebar-footer { padding: 8px 6px; }
+
+  .main-content { margin-left: 72px; }
+
+  /* Exceção: se o usuário clicar para abrir no mobile */
+  .sidebar.force-expanded {
+    width: 270px !important;
+    align-items: stretch;
+  }
+  .sidebar.force-expanded .sidebar-header {
+    padding: 24px;
+    border-bottom: 1px solid var(--sidebar-hover);
+    flex-direction: row;
+    gap: 0;
+  }
+  .sidebar.force-expanded .logo-text { display: inline-block !important; }
+  .sidebar.force-expanded .sidebar-nav a {
+    justify-content: flex-start;
+    gap: 16px;
+    padding: 12px 16px;
+    text-align: left;
+    flex-direction: row;
+  }
+  .sidebar.force-expanded .sidebar-nav a .label { display: inline !important; font-size: 0.95rem; }
+  .sidebar.force-expanded ~ .main-content { margin-left: 270px !important; }
 }

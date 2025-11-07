@@ -47,7 +47,6 @@ Source: "..\utils\*"; DestDir: "{app}\utils"; Flags: recursesubdirs ignoreversio
 
 ; binários (com restartreplace e kill prévio)
 Source: "..\dist\gui.exe";      DestDir: "{app}"; DestName: "gui.exe";      Flags: ignoreversion restartreplace; BeforeInstall: KillRunningApps
-Source: "..\dist\launcher.exe"; DestDir: "{app}"; DestName: "launcher.exe"; Flags: ignoreversion restartreplace; BeforeInstall: KillRunningApps
 
 ; env.example vai junto (sem segredos)
 Source: "..\env.example"; DestDir: "{app}"; DestName: "env.example"; Flags: ignoreversion
@@ -82,7 +81,7 @@ Filename: "{app}\gui.exe"; Description: "Iniciar Gestao (GUI)"; Flags: nowait po
 Filename: "{cmd}"; Parameters: "/c ping -n 2 127.0.0.1 > nul & start """" ""{app}\gui.exe"""; Flags: nowait runasoriginaluser; Check: WizardSilent
 
 [UninstallDelete]
-Type: filesandordirs; Name: "{app}\venv\Lib\site-packages\pip\_vendor\distlib\__pycache__"
+Type: filesandordirs; Name: "{app}\venv\Lib\site-packages\pip\_vendor\distlib\__pycache__ "
 
 [Code]
 function GetLocalAppData(): string;

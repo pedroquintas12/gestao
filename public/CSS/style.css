@@ -359,3 +359,99 @@ input:focus{
 .btn-light.card-btn:active {
   color: #111 !important;
 }
+
+
+/* sidebar em coluna, ocupando a altura toda */
+aside.sidebar{
+  display: flex;
+  flex-direction: column;
+  height: 100vh;           /* ou 100% se já estiver dentro de um container full-height */
+}
+
+/* o nav cresce e empurra o footer pra baixo */
+.sidebar-nav{
+  flex: 1 1 auto;
+  overflow-y: auto;        /* scroll no menu, não no footer */
+}
+
+/* estilinho do footer */
+.sidebar-footer{
+  color: #6c757d;
+  gap: 12px;
+  min-height: 36px;
+}
+.sidebar-footer .text-truncate{
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* ======= ADIÇÕES DE RESPONSIVIDADE GERAL ======= */
+
+/* Títulos fluidos (evita quebrar em telas pequenas) */
+.title{ font-size: clamp(22px, 3.2vw, 32px); }
+.subtitle{ font-size: clamp(14px, 2vw, 16px); }
+
+/* Imagens/mídias nunca estouram o container */
+img, svg, canvas, iframe, video{ max-width: 100%; height: auto; }
+
+/* Grade fluida padrão para grids genéricos (se você usar .grid fora do home) */
+.grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(260px,100%), 1fr));
+  gap: 16px;
+}
+
+/* Wrapper de tabela responsiva horizontal (melhor que .table-responsive para não bagunçar o layout) */
+.table-wrap{
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 12px;
+  background: transparent;
+}
+.table-wrap .table{ min-width: 700px; } /* ajuste se suas tabelas precisarem de mais/menos */
+
+/* Modais: limite saudável em telas menores */
+.modal-dialog{
+  max-width: min(920px, 96vw);
+  margin: 16px auto;
+}
+.modal-body{ max-height: calc(100dvh - 220px); overflow:auto; }
+
+/* Seu modal custom também ganha limites fluidos */
+.venda-modal{
+  max-width: min(980px, 96vw);
+  width: 100%;
+  max-height: 92dvh;
+  z-index: 1050;
+}
+@media (max-width: 768px){
+  .venda-card-grid{ grid-template-columns: 1fr; }
+  .venda-item-row{ grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 576px){
+  .venda-item-row{ grid-template-columns: 1fr; }
+  .venda-head-actions{ flex-wrap: wrap; gap: 8px; }
+}
+
+/* --- Sidebar fixa em todas as larguras; mantida por último para ganhar da cascata --- */
+.sidebar {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  height: 100dvh;
+}
+
+/* Desktop (≥992px) – largura normal/colapsada e recuo do conteúdo */
+@media (min-width: 992px) {
+  .main-content { margin-left: 270px !important; }
+  .sidebar.collapsed ~ .main-content { margin-left: 72px !important; }
+}
+
+/* Mobile (<992px) – slim por padrão e exceção quando expandida */
+@media (max-width: 991.98px) {
+  .main-content { margin-left: 72px !important; } /* sidebar slim */
+  .sidebar.force-expanded ~ .main-content { margin-left: 270px !important; }
+}
+

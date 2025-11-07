@@ -6,6 +6,7 @@ from model.companieModel import companie
 app = create_app()
 
 def open_browser():
+    
     with app.app_context():
         has_company = companie.query.first() is not None
 
