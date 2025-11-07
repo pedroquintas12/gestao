@@ -47,7 +47,7 @@ jobs:
           $ver = "${{ steps.v.outputs.version }}"
           @"
           __version__ = "$ver"
-          "@ | Out-File -FilePath .\version.py -Encoding UTF8
+          "@ | Out-File -FilePath .\config\version.py -Encoding UTF8
 
       - name: Instalar Inno Setup
         shell: pwsh

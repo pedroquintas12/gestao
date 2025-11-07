@@ -1,9 +1,9 @@
-from flask import Blueprint, render_template,  g
+from flask import Blueprint, render_template, g
 
 from config.decorators import login_required,admin_required
 from model.companieModel import companie
 try:
-    from version import __version__ as CURRENT_VERSION
+    from config.version import __version__ as CURRENT_VERSION
 except Exception:
     CURRENT_VERSION = "1.0.0"
 

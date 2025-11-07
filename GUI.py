@@ -22,7 +22,7 @@ HEALTH_TIMEOUT_S = 25
 
 # versão atual (gerada no workflow em version.py)
 try:
-    from version import __version__ as CURRENT_VERSION
+    from config.version import __version__ as CURRENT_VERSION
 except Exception:
     CURRENT_VERSION = "0.0.0"
 

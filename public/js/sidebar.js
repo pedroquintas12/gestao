@@ -74,7 +74,7 @@ export async function initSidebar() {
 
   // Versão no footer
   const sbVersion = document.getElementById("sbVersion");
-  if (sbVersion) sbVersion.textContent = `v${version}`;
+  if (sbVersion) sbVersion.textContent = `${version}`;
 
   // ===== Tooltips: só quando colapsada =====
   const mq = window.matchMedia("(max-width: 992px)");
