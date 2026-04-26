@@ -1,6 +1,7 @@
-from flask import Blueprint, render_template, g
+from flask import Blueprint, jsonify, render_template, g
 
-from config.decorators import login_required,admin_required
+from config.business import current_type, enabled_optional_modules
+from config.decorators import login_required, admin_required
 from model.companieModel import companie
 try:
     from config.version import __version__ as CURRENT_VERSION
@@ -31,6 +32,8 @@ def index():
         version=CURRENT_VERSION,
         logo=ctx.get("logo"),
         companie=ctx.get("nome"),
+        business_type=current_type().value,
+        enabled_modules=sorted(enabled_optional_modules()),
     )
 
 @front_bp.route("/admin")
@@ -42,8 +45,21 @@ def admin():
         version=CURRENT_VERSION,
         logo=ctx.get("logo"),
         companie=ctx.get("nome"),
+        business_type=current_type().value,
+        enabled_modules=sorted(enabled_optional_modules()),
     )
 
 @front_bp.route('/cadastroCompanie')
 def cadastro_companie():
     return render_template('cadastroCompanie.html')
+
+
+@front_bp.route("/api/config/business")
+def business_config():
+    """Permite ao frontend esconder/mostrar funcionalidades por ramo."""
+    bt = current_type()
+    return jsonify({
+        "type": bt.value,
+        "label": bt.label,
+        "modules": sorted(enabled_optional_modules()),
+    })

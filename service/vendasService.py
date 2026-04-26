@@ -8,7 +8,8 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError, DataError, InvalidRequestError
 
 from config.db import db
-from config.logger import get_logger  
+from config.business import is_module_enabled
+from config.logger import get_logger
 from model.companieModel import companie
 from utils.api_error import api_error
 from model.vendaModel import venda as Venda, VendaItem
@@ -94,7 +95,7 @@ class vendaService:
 
         if not id_cliente:
             err["id_cliente"] = "Campo 'id_cliente' Obrigatório"
-        if not id_veiculo:
+        if is_module_enabled("veiculo") and not id_veiculo:
             err["id_veiculo"] = "Campo 'id_veiculo' Obrigatório"
 
         out.update({"id_cliente": id_cliente, "id_veiculo": id_veiculo, "descricao": descricao})
@@ -109,12 +110,12 @@ class vendaService:
 
             if not Cliente.query.get(payload["id_cliente"]):
                 return api_error(404, "Cliente inválido")
-            if not Veiculo.query.get(payload["id_veiculo"]):
+            if payload.get("id_veiculo") and not Veiculo.query.get(payload["id_veiculo"]):
                 return api_error(404, "Veículo inválido")
 
             v = Venda(
                 id_cliente=payload["id_cliente"],
-                id_veiculo=payload["id_veiculo"],
+                id_veiculo=payload.get("id_veiculo"),
                 descricao=payload.get("descricao"),
                 status="EM_ANDAMENTO",
                 pagamento=FormaPagamento.NÃO_PAGO.name,
@@ -256,8 +257,9 @@ class vendaService:
             base = (
                 db.session.query(Venda.id_venda)
                 .join(Cliente, Venda.id_cliente == Cliente.id_cliente)
-                .join(Veiculo, Venda.id_veiculo == Veiculo.id_veiculo)
             )
+            if is_module_enabled("veiculo"):
+                base = base.outerjoin(Veiculo, Venda.id_veiculo == Veiculo.id_veiculo)
 
             if status:
                 base = base.filter(Venda.status == status)
@@ -266,11 +268,10 @@ class vendaService:
 
             if q:
                 like = f"%{q.strip()}%"
-                base = base.filter(or_(
-                    Venda.descricao.ilike(like),
-                    Cliente.nome.ilike(like),
-                    Veiculo.placa.ilike(like),
-                ))
+                clauses = [Venda.descricao.ilike(like), Cliente.nome.ilike(like)]
+                if is_module_enabled("veiculo"):
+                    clauses.append(Veiculo.placa.ilike(like))
+                base = base.filter(or_(*clauses))
 
             # --- filtro de período com fim exclusivo ---
             if data_ini and data_fim_exclusive:

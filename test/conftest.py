@@ -5,6 +5,8 @@ import pytest
 
 from app import create_app
 from config.db import db
+from config.business import set_current_type
+from enums.business import BusinessType
 
 # === Importa MODELS (garante que create_all crie as tabelas) ===
 from model.servicoModel import servico
@@ -14,10 +16,21 @@ from model.vendaModel import venda, VendaItem
 from model.caixaModel import caixa_lancamento
 
 
+@pytest.fixture()
+def business_type(request):
+    """
+    Ramo ativo durante o teste. Default: LAVAJATO (preserva os testes antigos).
+    Para parametrizar:
+        @pytest.mark.parametrize("business_type", [BusinessType.GENERICO], indirect=True)
+    """
+    value = getattr(request, "param", BusinessType.LAVAJATO)
+    set_current_type(value)
+    yield value
+    set_current_type(None)
 
 
 @pytest.fixture()
-def app():
+def app(business_type):
     """App isolado por teste com SQLite em arquivo temporário."""
     db_fd, db_path = tempfile.mkstemp(prefix="test_db_", suffix=".sqlite")
 

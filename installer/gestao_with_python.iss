@@ -84,6 +84,13 @@ Filename: "{cmd}"; Parameters: "/c ping -n 2 127.0.0.1 > nul & start """" ""{app
 Type: filesandordirs; Name: "{app}\venv\Lib\site-packages\pip\_vendor\distlib\__pycache__ "
 
 [Code]
+var
+  BusinessTypePage: TInputOptionWizardPage;
+
+const
+  BUSINESS_LAVAJATO = 0;
+  BUSINESS_GENERICO = 1;
+
 function GetLocalAppData(): string;
 begin
   Result := ExpandConstant('{localappdata}');
@@ -93,6 +100,68 @@ procedure EnsureDirExists(Dir: string);
 begin
   if not DirExists(Dir) then
     ForceDirectories(Dir);
+end;
+
+function SelectedBusinessType(): string;
+begin
+  if (BusinessTypePage <> nil) and (BusinessTypePage.SelectedValueIndex = BUSINESS_GENERICO) then
+    Result := 'generico'
+  else
+    Result := 'lavajato';
+end;
+
+procedure InitializeWizard;
+begin
+  BusinessTypePage := CreateInputOptionPage(
+    wpSelectDir,
+    'Ramo de negócio',
+    'Para qual tipo de negócio o Gestao será usado?',
+    'Esta escolha define quais módulos ficam ativos. Você pode alterar depois editando o arquivo .env.',
+    True,  { ExclusiveRadio }
+    False  { ListBox }
+  );
+  BusinessTypePage.Add('Lava-jato (cadastro de veículos, placas, KM)');
+  BusinessTypePage.Add('Genérico (sem veículos)');
+  BusinessTypePage.SelectedValueIndex := BUSINESS_LAVAJATO;
+end;
+
+procedure WriteOrReplaceEnvLine(EnvPath, Key, Value: string);
+var
+  Lines: TArrayOfString;
+  i, FoundIdx: Integer;
+  NewLine: string;
+begin
+  NewLine := Key + '=' + Value;
+  FoundIdx := -1;
+
+  if FileExists(EnvPath) then
+  begin
+    if LoadStringsFromFile(EnvPath, Lines) then
+    begin
+      for i := 0 to GetArrayLength(Lines) - 1 do
+      begin
+        if (Length(Lines[i]) >= Length(Key) + 1) and
+           (Copy(Lines[i], 1, Length(Key) + 1) = Key + '=') then
+        begin
+          Lines[i] := NewLine;
+          FoundIdx := i;
+          Break;
+        end;
+      end;
+      if FoundIdx = -1 then
+      begin
+        SetArrayLength(Lines, GetArrayLength(Lines) + 1);
+        Lines[GetArrayLength(Lines) - 1] := NewLine;
+      end;
+      SaveStringsToFile(EnvPath, Lines, False);
+      Exit;
+    end;
+  end;
+
+  { arquivo não existe ainda — cria com a linha }
+  SetArrayLength(Lines, 1);
+  Lines[0] := NewLine;
+  SaveStringsToFile(EnvPath, Lines, False);
 end;
 
 procedure KillRunningApps;
@@ -140,6 +209,12 @@ begin
         FileCopy(ExampleSrc, EnvPath, False);
       except
       end;
+    end;
+
+    { grava/atualiza o ramo escolhido na página do wizard }
+    try
+      WriteOrReplaceEnvLine(EnvPath, 'BUSINESS_TYPE', SelectedBusinessType());
+    except
     end;
   end;
 end;

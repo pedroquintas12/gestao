@@ -8,7 +8,7 @@ class venda(db.Model,TimestampMixin):
 
     id_venda   = db.Column(db.Integer, primary_key=True, autoincrement=True)
     id_cliente = db.Column(db.Integer, db.ForeignKey("cliente.id_cliente"), nullable=False)
-    id_veiculo = db.Column(db.Integer, db.ForeignKey("veiculo.id_veiculo"), nullable=False)
+    id_veiculo = db.Column(db.Integer, db.ForeignKey("veiculo.id_veiculo"), nullable=True)
 
     # deixa o total persistido (mais simples p/ relatórios) e sempre recalculamos ao salvar
     total      = db.Column(db.Numeric(10,2), nullable=False, default=0)
