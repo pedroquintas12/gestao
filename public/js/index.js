@@ -1,5 +1,18 @@
 import { initSidebar } from "./sidebar.js";
 
+// ==================== MÓDULOS ATIVOS ====================
+// Lê data-modules do <aside> (passado pelo backend via routes_front.py)
+// e adiciona classes no <body> para CSS condicional (.needs-X / .module-off-X).
+const __aside = document.querySelector("aside.sidebar");
+let __modules = [];
+try { __modules = JSON.parse(__aside?.dataset.modules || "[]"); } catch {}
+const moduleEnabled = (m) => __modules.includes(m);
+window.moduleEnabled = moduleEnabled; // exposto para outros scripts
+
+["veiculo", "estoque"].forEach((m) => {
+  if (!moduleEnabled(m)) document.body.classList.add(`module-off-${m}`);
+});
+
 // ==================== VARIÁVEIS DE ESTADO ====================
 document.addEventListener("DOMContentLoaded", () => {
   initSidebar();
@@ -727,6 +740,7 @@ async function loadVendas() {
   const { vendas, pagination } = resp;
 
   const tbody = document.getElementById("venTable");
+  const showVei = moduleEnabled("veiculo");
   tbody.innerHTML = (vendas || [])
     .map(
       (v) => `
@@ -734,7 +748,7 @@ async function loadVendas() {
       <td>${v.id_venda}</td>
       <td>${v.descricao || "-"}</td>
       <td>${v.cliente?.nome ?? v.id_cliente}</td>
-      <td>${v.veiculo?.placa ?? v.id_veiculo}</td>
+      ${showVei ? `<td class="needs-veiculo">${v.veiculo?.placa ?? (v.id_veiculo ?? "-")}</td>` : ""}
       <td>R$ ${money(v.total)}</td>
       <td>${statusPill(v.status)}</td>
       <td><span class="badge-rounded pill-pay">${v.pagamento}</span></td>
@@ -893,15 +907,15 @@ document.getElementById("btnCriarVenda").onclick = async () => {
       showToast("Selecione um cliente válido", "error");
       return;
     }
-    if (!id_veiculo) {
+    if (moduleEnabled("veiculo") && !id_veiculo) {
       showToast("Selecione um veículo do cliente", "error");
       return;
     }
 
-    const res = await api("/api/vendas", {
-      method: "POST",
-      body: { id_cliente, id_veiculo, descricao },
-    });
+    const body = { id_cliente, descricao };
+    if (moduleEnabled("veiculo") && id_veiculo) body.id_veiculo = id_veiculo;
+
+    const res = await api("/api/vendas", { method: "POST", body });
     if (!res) return;
 
     showToast("Venda criada!");
@@ -975,10 +989,14 @@ window.openVendaModal = async (id) => {
 function renderItensTabela(itens) {
   if (!itensTableBody) return;
   itensTableBody.innerHTML = (itens || [])
-    .map(
-      (it) => `
+    .map((it) => {
+      const isProd = it.tipo === "produto" || it.id_produto;
+      const tipoBadge = isProd
+        ? '<span class="badge text-bg-info ms-1" style="font-size:.65rem;">PRODUTO</span>'
+        : '<span class="badge text-bg-secondary ms-1" style="font-size:.65rem;">SERVIÇO</span>';
+      return `
     <tr>
-      <td>${it.descricao}</td>
+      <td>${it.descricao}${tipoBadge}</td>
       <td>R$ ${money(it.preco_unit)}</td>
       <td>${it.quantidade}</td>
       <td>R$ ${money(it.desconto)}</td>
@@ -989,8 +1007,8 @@ function renderItensTabela(itens) {
         </button>
       </td>
     </tr>
-  `
-    )
+  `;
+    })
     .join("");
 }
 
@@ -1093,17 +1111,25 @@ btnVendaFechar?.addEventListener("click", () => {
   vendaModal?.hide();
 });
 
-// ==================== AUTOCOMPLETE DE SERVIÇOS NO MODAL ====================
+// ==================== AUTOCOMPLETE DE SERVIÇOS / PRODUTOS NO MODAL ====================
+const elTipoItem = document.getElementById("editItemTipo");
+const elProdutoIdHidden = document.getElementById("editItemProdutoId");
+const elEstoqueHidden = document.getElementById("editItemEstoque");
+const elHintEstoque = document.getElementById("servicoEscolhidoEstoque");
 
-async function buscarServicosRemoto(q) {
+function tipoItem() {
+  return elTipoItem?.value || "servico";
+}
+
+async function buscarItensRemoto(q) {
   if (!q || q.trim().length < 2) return [];
+  const isProd = tipoItem() === "produto";
   try {
-    const resp = await api("/api/servicos", {
+    const resp = await api(isProd ? "/api/produtos" : "/api/servicos", {
       params: { q: q.trim(), page: 1, per_page: 10 },
     });
     if (!resp) return [];
-    const { servicos } = resp;
-    return servicos || [];
+    return isProd ? (resp.produtos || []) : (resp.servicos || []);
   } catch {
     return [];
   }
@@ -1111,8 +1137,11 @@ async function buscarServicosRemoto(q) {
 
 function resetServicoBusca() {
   if (elServicoIdHidden) elServicoIdHidden.value = "";
+  if (elProdutoIdHidden) elProdutoIdHidden.value = "";
   if (elServicoPrecoHidden) elServicoPrecoHidden.value = "";
+  if (elEstoqueHidden) elEstoqueHidden.value = "";
   if (elServicoHintBox) elServicoHintBox.classList.add("d-none");
+  if (elHintEstoque) elHintEstoque.innerHTML = "";
   if (elBuscaServico) elBuscaServico.value = "";
   if (elSugestoesServico) {
     elSugestoesServico.style.display = "none";
@@ -1130,24 +1159,33 @@ function renderSugestoesServicos(lista) {
     return;
   }
 
+  const isProd = tipoItem() === "produto";
   elSugestoesServico.innerHTML = lista
-    .map(
-      (s) => `
-    <button type="button"
-            class="autocomplete-item"
-            data-id="${s.id_servico}"
-            data-nome="${s.nome}"
-            data-preco="${s.valor}">
-      <div class="autocomplete-item-main">
-        <span>${s.nome}</span>
-        <span>R$ ${money(s.valor)}</span>
-      </div>
-      <div class="autocomplete-item-extra">
-        <span>ID #${s.id_servico}</span>
-      </div>
-    </button>
-  `
-    )
+    .map((s) => {
+      const id = isProd ? s.id_produto : s.id_servico;
+      const nome = s.nome;
+      const preco = isProd ? s.preco : s.valor;
+      const qtd = isProd ? (s.quantidade ?? 0) : null;
+      const extraLabel = isProd
+        ? `Estoque: ${qtd}`
+        : `ID #${id}`;
+      return `
+        <button type="button"
+                class="autocomplete-item"
+                data-id="${id}"
+                data-nome="${nome}"
+                data-preco="${preco}"
+                data-estoque="${qtd ?? ""}">
+          <div class="autocomplete-item-main">
+            <span>${nome}</span>
+            <span>R$ ${money(preco)}</span>
+          </div>
+          <div class="autocomplete-item-extra">
+            <span>${extraLabel}</span>
+          </div>
+        </button>
+      `;
+    })
     .join("");
 
   elSugestoesServico.style.display = "block";
@@ -1159,12 +1197,27 @@ function renderSugestoesServicos(lista) {
         const id = btn.dataset.id;
         const nome = btn.dataset.nome;
         const preco = btn.dataset.preco;
+        const estoque = btn.dataset.estoque;
+        const isProdNow = tipoItem() === "produto";
 
-        if (elServicoIdHidden) elServicoIdHidden.value = id;
+        if (isProdNow) {
+          if (elProdutoIdHidden) elProdutoIdHidden.value = id;
+          if (elServicoIdHidden) elServicoIdHidden.value = "";
+          if (elEstoqueHidden) elEstoqueHidden.value = estoque;
+        } else {
+          if (elServicoIdHidden) elServicoIdHidden.value = id;
+          if (elProdutoIdHidden) elProdutoIdHidden.value = "";
+          if (elEstoqueHidden) elEstoqueHidden.value = "";
+        }
         if (elServicoPrecoHidden) elServicoPrecoHidden.value = preco;
 
         if (elServicoHintNome) elServicoHintNome.textContent = nome;
         if (elServicoHintValor) elServicoHintValor.textContent = money(preco);
+        if (elHintEstoque) {
+          elHintEstoque.innerHTML = isProdNow
+            ? `<span class="badge text-bg-light">Estoque: ${estoque}</span>`
+            : "";
+        }
         if (elServicoHintBox) elServicoHintBox.classList.remove("d-none");
 
         if (elBuscaServico) elBuscaServico.value = nome;
@@ -1175,12 +1228,13 @@ function renderSugestoesServicos(lista) {
 }
 
 const buscarServicosDebounced = debounce(async (texto) => {
-  // quando o usuário digita de novo, limpamos a seleção anterior
   if (elServicoIdHidden) elServicoIdHidden.value = "";
+  if (elProdutoIdHidden) elProdutoIdHidden.value = "";
   if (elServicoPrecoHidden) elServicoPrecoHidden.value = "";
+  if (elEstoqueHidden) elEstoqueHidden.value = "";
   if (elServicoHintBox) elServicoHintBox.classList.add("d-none");
 
-  const lista = await buscarServicosRemoto(texto);
+  const lista = await buscarItensRemoto(texto);
   renderSugestoesServicos(lista);
 }, 300);
 
@@ -1192,6 +1246,15 @@ elBuscaServico?.addEventListener("input", (e) => {
     return;
   }
   buscarServicosDebounced(q);
+});
+
+elTipoItem?.addEventListener("change", () => {
+  resetServicoBusca();
+  if (elBuscaServico) {
+    elBuscaServico.placeholder =
+      tipoItem() === "produto" ? "Buscar produto…" : "Buscar serviço…";
+    elBuscaServico.focus();
+  }
 });
 
 document.addEventListener("click", (ev) => {
@@ -1207,11 +1270,18 @@ document.addEventListener("click", (ev) => {
 btnAddItem?.addEventListener("click", async () => {
   if (!currentVendaId) return;
 
+  const isProd = tipoItem() === "produto";
   const id_servico = Number(elServicoIdHidden?.value || 0);
+  const id_produto = Number(elProdutoIdHidden?.value || 0);
   const quantidade = Number(elItemQtd?.value || 1);
   const desconto = Number(elItemDescReais?.value || 0);
 
-  if (!id_servico) {
+  if (isProd && !id_produto) {
+    showToast("Selecione um produto válido", "error");
+    elBuscaServico?.focus();
+    return;
+  }
+  if (!isProd && !id_servico) {
     showToast("Selecione um serviço válido", "error");
     elBuscaServico?.focus();
     return;
@@ -1221,10 +1291,25 @@ btnAddItem?.addEventListener("click", async () => {
     return;
   }
 
+  // Aviso visual quando estoque insuficiente — mas NÃO bloqueia.
+  if (isProd) {
+    const estoqueDisp = Number(elEstoqueHidden?.value || 0);
+    if (quantidade > estoqueDisp) {
+      const ok = confirm(
+        `Estoque atual: ${estoqueDisp}. Quantidade pedida: ${quantidade}.\n` +
+        `Ao finalizar, o estoque ficará negativo. Deseja continuar?`
+      );
+      if (!ok) return;
+    }
+  }
+
   try {
+    const body = isProd
+      ? { id_produto, quantidade, desconto }
+      : { id_servico, quantidade, desconto };
     const res = await api(`/api/vendas/${currentVendaId}/itens`, {
       method: "POST",
-      body: { id_servico, quantidade, desconto },
+      body,
     });
     if (!res) return;
     showToast("Item adicionado");

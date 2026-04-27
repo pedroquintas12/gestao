@@ -16,6 +16,7 @@ from model.vendaModel import venda as Venda, VendaItem
 from model.servicoModel import servico as Servico
 from model.clienteModel import cliente as Cliente
 from model.veiculoModel import veiculo as Veiculo
+from model.produtoModel import Produto
 from model.caixaModel import caixa_lancamento as Caixa
 from enums.forma_pagamentoEnum import FormaPagamento
 
@@ -144,17 +145,22 @@ class vendaService:
     @staticmethod
     def add_item(id_venda: int, data: dict):
         """
-        Adiciona item a uma venda. Se o serviço já existir na venda,
-        apenas incrementa a quantidade e acumula o desconto.
-        NUNCA atribui em item.subtotal (é property).
+        Adiciona item a uma venda. Cada item é OU serviço OU produto (XOR).
+        Se já existir item para o mesmo serviço/produto, apenas incrementa
+        quantidade e acumula desconto. NUNCA atribui em item.subtotal.
         """
         try:
             id_servico = int(data.get("id_servico") or 0)
+            id_produto = int(data.get("id_produto") or 0)
             qtd = int(data.get("quantidade") or 1)
             desconto = _as_decimal(data.get("desconto") or 0, "0")
 
-            if id_servico <= 0 or qtd <= 0:
-                return api_error(400, "id_servico e quantidade são obrigatórios e devem ser > 0")
+            if qtd <= 0:
+                return api_error(400, "quantidade deve ser > 0")
+            if (id_servico > 0) == (id_produto > 0):
+                return api_error(
+                    400, "Informe id_servico OU id_produto (um, não ambos)"
+                )
 
             with db.session.begin():
                 v: Venda | None = db.session.execute(
@@ -163,18 +169,28 @@ class vendaService:
                 if not v:
                     return api_error(404, "Venda não encontrada")
 
-                s: Servico | None = db.session.execute(
-                    select(Servico).where(Servico.id_servico == id_servico).with_for_update(read=True)
-                ).scalar_one_or_none()
-                if not s:
-                    return api_error(404, "Serviço não encontrado")
-
-                preco = _as_decimal(s.valor or 0, "0")
+                if id_servico:
+                    s = db.session.execute(
+                        select(Servico).where(Servico.id_servico == id_servico)
+                    ).scalar_one_or_none()
+                    if not s:
+                        return api_error(404, "Serviço não encontrado")
+                    preco = _as_decimal(s.valor or 0, "0")
+                    nome  = getattr(s, "nome", "Serviço")
+                    filtro = (VendaItem.id_servico == id_servico)
+                else:
+                    p = db.session.execute(
+                        select(Produto).where(Produto.id_produto == id_produto)
+                    ).scalar_one_or_none()
+                    if not p:
+                        return api_error(404, "Produto não encontrado")
+                    preco = _as_decimal(p.preco or 0, "0")
+                    nome  = getattr(p, "nome", "Produto")
+                    filtro = (VendaItem.id_produto == id_produto)
 
                 it: VendaItem | None = db.session.execute(
                     select(VendaItem)
-                    .where(VendaItem.id_venda == v.id_venda,
-                           VendaItem.id_servico == id_servico)
+                    .where(VendaItem.id_venda == v.id_venda, filtro)
                     .with_for_update()
                 ).scalar_one_or_none()
 
@@ -182,18 +198,20 @@ class vendaService:
                     it.quantidade = int(it.quantidade or 0) + qtd
                     it.desconto = _as_decimal(it.desconto or 0, "0") + desconto
                     it.preco_unit = preco
-                    if hasattr(it, "descricao") and hasattr(s, "nome"):
-                        it.descricao = it.descricao or s.nome
+                    it.descricao = it.descricao or nome
                 else:
-                    it = VendaItem(
+                    kwargs = dict(
                         id_venda=v.id_venda,
-                        id_servico=id_servico,
-                        descricao=getattr(s, "nome", None),
+                        descricao=nome,
                         preco_unit=preco,
                         quantidade=qtd,
                         desconto=desconto,
                     )
-                    db.session.add(it)
+                    if id_servico:
+                        kwargs["id_servico"] = id_servico
+                    else:
+                        kwargs["id_produto"] = id_produto
+                    db.session.add(VendaItem(**kwargs))
 
                 vendaService._recalc_total_sql(v)
 
@@ -390,6 +408,8 @@ class vendaService:
         - Se já houver lançamento no caixa, atualiza (idempotente).
         - Se não houver, cria.
         - NÃO duplica.
+        - Decrementa o estoque de cada item-produto. Se finalizar mais de
+          uma vez, NÃO debita de novo (controlado pelo status anterior).
         """
         payload = data or {}
         forma = payload.get("forma_pagamento")
@@ -406,11 +426,25 @@ class vendaService:
                 if not v.itens:
                     return api_error(400, "Venda sem itens")
 
+                ja_finalizada = (v.status == "FINALIZADA")
+
                 vendaService._recalc_total_sql(v)
                 v.status = "FINALIZADA"
                 v.pagamento = _forma_pagamento_or_default(
                     forma, fallback=getattr(v, "pagamento", None) or "PIX"
                 )
+
+                # Estoque: debita só na PRIMEIRA finalização. Permite ficar
+                # negativo (regra de produto: aviso visual, não bloqueio).
+                if not ja_finalizada:
+                    for it in v.itens:
+                        if it.id_produto and it.quantidade:
+                            p = db.session.execute(
+                                select(Produto).where(Produto.id_produto == it.id_produto)
+                                .with_for_update()
+                            ).scalar_one_or_none()
+                            if p:
+                                p.quantidade = (p.quantidade or 0) - int(it.quantidade)
 
                 cx: Caixa | None = db.session.execute(
                     select(Caixa).where(Caixa.venda_id == v.id_venda).with_for_update()
@@ -451,7 +485,19 @@ class vendaService:
                 if not v:
                     return api_error(404, "Venda não encontrada")
 
+                era_finalizada = (v.status == "FINALIZADA")
                 v.status = "CANCELADA"
+
+                # Devolve estoque se a venda já tinha sido finalizada.
+                if era_finalizada:
+                    for it in v.itens:
+                        if it.id_produto and it.quantidade:
+                            p = db.session.execute(
+                                select(Produto).where(Produto.id_produto == it.id_produto)
+                                .with_for_update()
+                            ).scalar_one_or_none()
+                            if p:
+                                p.quantidade = (p.quantidade or 0) + int(it.quantidade)
 
                 cx: Caixa | None = db.session.execute(
                     select(Caixa).where(Caixa.venda_id == v.id_venda).with_for_update()

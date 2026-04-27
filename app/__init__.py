@@ -4,6 +4,7 @@ from config.db import db
 from config import load_env_and_config
 from config.business import current_type, is_module_enabled
 from .erros import register_error_handlers
+from .migrations import run_migrations
 from .seeds import seed_db
 import config.logger
 
@@ -63,6 +64,7 @@ def create_app():
     with app.app_context():
         import model
         db.create_all()
+        run_migrations(db)
         if cfg["SEED_ON_STARTUP"]:
             seed_db(cfg)
 

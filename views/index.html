@@ -27,7 +27,7 @@
 <aside class="sidebar p-3"
        data-version="{{ version }}"
        data-business-type="{{ business_type }}"
-       data-modules="{{ enabled_modules|tojson }}">
+       data-modules='{{ enabled_modules|tojson }}'>
   <div class="sidebar-header d-flex align-items-center justify-content-between">
     <div class="logo">
       <img src="/public/favicon.ico" alt="Logo" class="logo-img" style="width:40px;">
@@ -169,7 +169,7 @@
       <div class="card-header">
         <h2>Vendas / Orçamentos</h2>
         <div class="d-flex flex-wrap gap-2 align-items-start">
-          <input class="form-control" type="search" placeholder="Buscar (descrição, nome cliente, placa)" id="venSearch" style="min-width:220px">
+          <input class="form-control" type="search" placeholder="Buscar (descrição, nome cliente)" id="venSearch" style="min-width:220px">
 
           <select class="form-select" id="venFilStatus" style="max-width:180px">
             <option value="">Status (todos)</option>
@@ -202,7 +202,7 @@
               <th>#</th>
               <th>Descrição</th>
               <th>Cliente</th>
-              <th>Veículo</th>
+              <th class="needs-veiculo">Veículo</th>
               <th>Total</th>
               <th>Status</th>
               <th>Pagamento</th>
@@ -467,7 +467,7 @@
             <input type="hidden" id="venCli">
           </div>
 
-          <div class="mb-3">
+          <div class="mb-3 needs-veiculo">
             <label class="form-label">Veículo</label>
             <select class="form-select" id="venVei" disabled>
               <option value="">Selecione o cliente primeiro…</option>
@@ -558,7 +558,14 @@
             <!-- linha adicionar item -->
             <div class="venda-item-row">
               <div class="venda-form-group flex-grow-1 position-relative">
-                <label for="editItemServicoBusca" class="venda-label">Serviço</label>
+                <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                  <label for="editItemServicoBusca" class="venda-label mb-0">Item</label>
+                  <select id="editItemTipo" class="form-select form-select-sm needs-estoque-select"
+                          style="width:auto; min-width:120px;">
+                    <option value="servico">Serviço</option>
+                    <option value="produto" class="needs-estoque">Produto</option>
+                  </select>
+                </div>
 
                 <input
                   id="editItemServicoBusca"
@@ -568,7 +575,9 @@
                 />
 
                 <input type="hidden" id="editItemServicoId">
+                <input type="hidden" id="editItemProdutoId">
                 <input type="hidden" id="editItemServicoPreco">
+                <input type="hidden" id="editItemEstoque">
 
                 <div id="servicoSugestoes" class="autocomplete-box" style="display:none;"></div>
 
@@ -578,6 +587,7 @@
                     <span id="servicoEscolhidoNome">-</span>
                     — R$
                     <span id="servicoEscolhidoValor">0,00</span>
+                    <span id="servicoEscolhidoEstoque" class="ms-2"></span>
                   </small>
                 </div>
               </div>

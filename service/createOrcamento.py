@@ -124,8 +124,14 @@ def gerar_pdf_orcamento_venda_reportlab(
     desconto_total = Decimal("0")
     linhas_itens = []
 
+    has_produto_no_orcamento = False
     for item in venda_obj.itens:
         desc_item = item.descricao or ""
+        is_produto = bool(getattr(item, "id_produto", None))
+        if is_produto:
+            has_produto_no_orcamento = True
+            desc_item = f"[Produto] {desc_item}"
+
         preco_unit = Decimal(str(item.preco_unit or 0))
         qtd = int(item.quantidade or 0)
         desc_desconto = Decimal(str(item.desconto or 0))
@@ -282,13 +288,15 @@ def gerar_pdf_orcamento_venda_reportlab(
     p_title.drawOn(c, margin_left, cursor_y - h)
     cursor_y -= (h + 4)
 
-    cliente_text = (
-        f"<b>Cliente:</b> {cli_nome}<br/>"
-        f"<b>CPF:</b> {cli_doc}<br/>"
-        f"<b>Telefone:</b> {cli_tel}<br/>"
-        f"<b>Veículo / Placa:</b> {veic_placa}<br/>"
-        f"<b>Observação / Descrição:</b> {desc_venda}"
-    )
+    cliente_text_parts = [
+        f"<b>Cliente:</b> {cli_nome}",
+        f"<b>CPF:</b> {cli_doc}",
+        f"<b>Telefone:</b> {cli_tel}",
+    ]
+    if veic_placa:
+        cliente_text_parts.append(f"<b>Veículo / Placa:</b> {veic_placa}")
+    cliente_text_parts.append(f"<b>Observação / Descrição:</b> {desc_venda}")
+    cliente_text = "<br/>".join(cliente_text_parts)
     p_cli = Paragraph(cliente_text, style_normal)
     w, h = p_cli.wrapOn(c, max_width, 200)
     p_cli.drawOn(c, margin_left, cursor_y - h)

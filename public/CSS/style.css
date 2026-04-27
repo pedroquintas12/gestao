@@ -20,6 +20,22 @@
 html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:Inter, sans-serif;}
 a{color:inherit;text-decoration:none}
 
+/* ===== Visibilidade por módulo ativo =====
+   Elementos com .needs-X são ocultados quando o body tem .module-off-X.
+   O JS em index.js define a classe no body com base em data-modules da sidebar. */
+body.module-off-veiculo .needs-veiculo { display: none !important; }
+body.module-off-estoque .needs-estoque { display: none !important; }
+
+/* Aviso visual de saldo de estoque negativo em itens da venda */
+.estoque-warn {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 0.78rem; color: #b45309;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  padding: 2px 8px; border-radius: 999px;
+  margin-left: 6px;
+}
+
 
 /* ===== HEADER ===== */
 header{position:sticky;top:0;background:rgba(250,250,250,.8);backdrop-filter:saturate(1.2) blur(10px);border-bottom:1px solid rgba(2,6,23,.06);z-index:50}

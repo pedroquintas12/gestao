@@ -190,3 +190,128 @@ def test_rotas_de_estoque_404_quando_desligado(client):
 def test_generico_sem_estoque_so_tem_modulos_core(client):
     body = client.get("/api/config/business").get_json()
     assert body["modules"] == []
+
+
+# ============================================================
+#  Integração estoque ↔ vendas (Fase 2)
+# ============================================================
+
+def _criar_cliente_e_veiculo(client):
+    cli = client.post("/api/clientes", json={"nome": "C", "cpf": "1", "numero": "81"}).get_json()["cliente"]
+    vei = client.post("/api/veiculos", json={"id_cliente": cli["id_cliente"], "placa": "ABC1D23"}).get_json()["veiculo"]
+    return cli, vei
+
+
+def test_venda_aceita_produto_como_item(client):
+    cli, vei = _criar_cliente_e_veiculo(client)
+    prod = client.post("/api/produtos", json={
+        "nome": "Cera", "preco": 50, "quantidade": 10
+    }).get_json()["produto"]
+
+    venda = client.post("/api/vendas", json={
+        "id_cliente": cli["id_cliente"], "id_veiculo": vei["id_veiculo"]
+    }).get_json()["venda"]
+
+    res = client.post(f"/api/vendas/{venda['id_venda']}/itens", json={
+        "id_produto": prod["id_produto"], "quantidade": 3
+    })
+    assert res.status_code == 200
+    itens = res.get_json()["venda"]["itens"]
+    assert len(itens) == 1
+    assert itens[0]["tipo"] == "produto"
+    assert itens[0]["id_produto"] == prod["id_produto"]
+    assert itens[0]["id_servico"] is None
+
+
+def test_venda_rejeita_servico_e_produto_juntos(client):
+    cli, vei = _criar_cliente_e_veiculo(client)
+    prod = client.post("/api/produtos", json={"nome": "P", "preco": 1, "quantidade": 1}).get_json()["produto"]
+    svc = client.post("/api/servicos", json={"nome": "S", "valor": 1}).get_json()["servico"]
+    venda = client.post("/api/vendas", json={
+        "id_cliente": cli["id_cliente"], "id_veiculo": vei["id_veiculo"]
+    }).get_json()["venda"]
+
+    res = client.post(f"/api/vendas/{venda['id_venda']}/itens", json={
+        "id_servico": svc["id_servico"],
+        "id_produto": prod["id_produto"],
+        "quantidade": 1,
+    })
+    assert res.status_code == 400
+
+
+def test_finalizar_venda_decrementa_estoque(client):
+    cli, vei = _criar_cliente_e_veiculo(client)
+    prod = client.post("/api/produtos", json={
+        "nome": "Cera", "preco": 50, "quantidade": 10
+    }).get_json()["produto"]
+    venda = client.post("/api/vendas", json={
+        "id_cliente": cli["id_cliente"], "id_veiculo": vei["id_veiculo"]
+    }).get_json()["venda"]
+    client.post(f"/api/vendas/{venda['id_venda']}/itens", json={
+        "id_produto": prod["id_produto"], "quantidade": 4
+    })
+
+    res = client.post(f"/api/vendas/{venda['id_venda']}/finalizar", json={"forma_pagamento": "PIX"})
+    assert res.status_code == 200
+
+    # Estoque deve estar 10 - 4 = 6
+    body = client.get(f"/api/produtos/{prod['id_produto']}").get_json()
+    assert body["produto"]["quantidade"] == 6
+
+
+def test_finalizar_permite_estoque_negativo(client):
+    """Regra: não bloqueia mesmo se quantidade ficaria negativa (aviso só na UI)."""
+    cli, vei = _criar_cliente_e_veiculo(client)
+    prod = client.post("/api/produtos", json={
+        "nome": "Cera", "preco": 50, "quantidade": 2
+    }).get_json()["produto"]
+    venda = client.post("/api/vendas", json={
+        "id_cliente": cli["id_cliente"], "id_veiculo": vei["id_veiculo"]
+    }).get_json()["venda"]
+    client.post(f"/api/vendas/{venda['id_venda']}/itens", json={
+        "id_produto": prod["id_produto"], "quantidade": 5
+    })
+
+    res = client.post(f"/api/vendas/{venda['id_venda']}/finalizar", json={"forma_pagamento": "PIX"})
+    assert res.status_code == 200
+
+    body = client.get(f"/api/produtos/{prod['id_produto']}").get_json()
+    assert body["produto"]["quantidade"] == -3
+
+
+def test_cancelar_venda_finalizada_devolve_estoque(client):
+    cli, vei = _criar_cliente_e_veiculo(client)
+    prod = client.post("/api/produtos", json={
+        "nome": "X", "preco": 1, "quantidade": 10
+    }).get_json()["produto"]
+    venda = client.post("/api/vendas", json={
+        "id_cliente": cli["id_cliente"], "id_veiculo": vei["id_veiculo"]
+    }).get_json()["venda"]
+    client.post(f"/api/vendas/{venda['id_venda']}/itens", json={
+        "id_produto": prod["id_produto"], "quantidade": 3
+    })
+    client.post(f"/api/vendas/{venda['id_venda']}/finalizar", json={"forma_pagamento": "PIX"})
+    assert client.get(f"/api/produtos/{prod['id_produto']}").get_json()["produto"]["quantidade"] == 7
+
+    res = client.post(f"/api/vendas/{venda['id_venda']}/cancelar")
+    assert res.status_code == 200
+    assert client.get(f"/api/produtos/{prod['id_produto']}").get_json()["produto"]["quantidade"] == 10
+
+
+def test_finalizar_idempotente_nao_debita_2x(client):
+    cli, vei = _criar_cliente_e_veiculo(client)
+    prod = client.post("/api/produtos", json={
+        "nome": "X", "preco": 1, "quantidade": 10
+    }).get_json()["produto"]
+    venda = client.post("/api/vendas", json={
+        "id_cliente": cli["id_cliente"], "id_veiculo": vei["id_veiculo"]
+    }).get_json()["venda"]
+    client.post(f"/api/vendas/{venda['id_venda']}/itens", json={
+        "id_produto": prod["id_produto"], "quantidade": 2
+    })
+
+    client.post(f"/api/vendas/{venda['id_venda']}/finalizar", json={"forma_pagamento": "PIX"})
+    client.post(f"/api/vendas/{venda['id_venda']}/finalizar", json={"forma_pagamento": "DINHEIRO"})
+
+    body = client.get(f"/api/produtos/{prod['id_produto']}").get_json()
+    assert body["produto"]["quantidade"] == 8  # debitou só 1x
