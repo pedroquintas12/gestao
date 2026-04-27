@@ -1,11 +1,12 @@
 # Gestao
 
-Sistema de gestão financeira para pequenos negócios, empacotado como aplicativo desktop para Windows. Suporta múltiplos ramos: hoje **lava-jato** (com cadastro de veículos, placas, KM) e **genérico** (sem veículos). O ramo é escolhido na instalação.
+Sistema de gestão financeira para pequenos negócios, empacotado como aplicativo desktop para Windows. Suporta múltiplos ramos: hoje **lava-jato** (com cadastro de veículos, placas, KM) e **genérico** (sem veículos). O ramo é escolhido na instalação. Inclui módulo opcional de **estoque** com campos customizáveis pelo próprio usuário.
 
 ## Funcionalidades
 
 - Cadastro de clientes, serviços, vendas (com itens), caixa diário e empresa.
 - Cadastro de veículos vinculado ao cliente (ramo lava-jato).
+- Estoque com campos custom: o usuário define que colunas o produto tem (texto, número, data, booleano, lista) e o app valida automaticamente.
 - Geração de orçamento em PDF.
 - Login com sessões e usuário admin.
 - Auto-update via GitHub Releases (a cada abertura, o launcher checa se há versão nova e oferece atualizar).
@@ -16,10 +17,11 @@ Baixe o instalador mais recente em [Releases](https://github.com/pedroquintas12/
 
 O instalador:
 1. Pergunta o **ramo do negócio** (lava-jato ou genérico).
-2. Instala o Python 3.12 silenciosamente.
-3. Cria um ambiente virtual em `C:\Program Files\Gestao\venv` e instala as dependências.
-4. Cria atalho na Área de Trabalho (opcional).
-5. Coloca o `.env` em `%LOCALAPPDATA%\Gestao\.env` com o ramo escolhido.
+2. Pergunta quais **módulos opcionais** instalar (atualmente: estoque).
+3. Instala o Python 3.12 silenciosamente.
+4. Cria um ambiente virtual em `C:\Program Files\Gestao\venv` e instala as dependências.
+5. Cria atalho na Área de Trabalho (opcional).
+6. Escreve `BUSINESS_TYPE` e `ENABLE_ESTOQUE` no `.env` em `%LOCALAPPDATA%\Gestao\.env` conforme as escolhas.
 
 Os dados do app (banco SQLite, logs e `.env`) ficam em:
 ```
@@ -72,6 +74,7 @@ Copie `env.example` para `.env` na raiz (em dev) ou em `%LOCALAPPDATA%\Gestao\.e
 | Variável | Default | Descrição |
 |---|---|---|
 | `BUSINESS_TYPE` | `lavajato` | Ramo do negócio: `lavajato` ou `generico` |
+| `ENABLE_ESTOQUE` | `true` | Liga/desliga o módulo de estoque (independente do ramo) |
 | `SECRET_KEY` | `change-me` | Chave para assinatura de sessão Flask |
 | `SQLALCHEMY_DATABASE_URI` | `sqlite:///gestor.db` | Em produção é reescrita para `%LOCALAPPDATA%\Gestao\gestor.db` |
 | `SEED_ON_STARTUP` | `true` | Se `true`, semeia admin e serviços padrão na inicialização |
@@ -139,10 +142,10 @@ utils/       api_error, geração de orçamento
 
 ### Modularização por ramo
 
-O ramo é lido de `BUSINESS_TYPE` e cada ramo ativa um conjunto de **módulos opcionais** (ex.: `veiculo` só existe em lava-jato).
+O ramo é lido de `BUSINESS_TYPE` e cada ramo ativa um conjunto de **módulos opcionais** (ex.: `veiculo` só existe em lava-jato). Alguns módulos têm flag dedicada e são independentes do ramo (ex.: `estoque` ↔ `ENABLE_ESTOQUE`).
 
 - **Definição dos ramos:** [enums/business.py](enums/business.py)
-- **Mapa de módulos por ramo:** [config/business.py](config/business.py) → `OPTIONAL_MODULES_BY_TYPE`
+- **Mapa de módulos por ramo + env flags:** [config/business.py](config/business.py) → `OPTIONAL_MODULES_BY_TYPE` e `MODULE_ENV_FLAGS`
 - **Registro condicional dos blueprints:** [app/__init__.py](app/__init__.py) → `_register_blueprints`
 - **Endpoint para o frontend:** `GET /api/config/business` retorna `{type, label, modules}`
 
@@ -151,6 +154,58 @@ Para adicionar um novo ramo (ex.: barbearia):
 2. Liste os módulos opcionais em `OPTIONAL_MODULES_BY_TYPE`.
 3. Adicione serviços padrão em `DEFAULT_SERVICOS_BY_TYPE` ([app/seeds.py](app/seeds.py)).
 4. Adicione a opção no `BusinessTypePage` do [installer/gestao_with_python.iss](installer/gestao_with_python.iss).
+
+### Estoque com campos customizáveis
+
+O módulo `estoque` permite ao usuário **definir as colunas dos produtos**. Cada negócio cadastra os campos que faz sentido para ele (validade, marca, fornecedor, voltagem etc.) e o app valida tipos automaticamente.
+
+**Tipos suportados:** `texto`, `numero`, `data`, `booleano`, `select` (com opções).
+
+**Como funciona:**
+
+1. Admin cadastra as definições de campo:
+   ```http
+   POST /api/field-definitions
+   { "label": "Marca", "tipo": "texto" }
+   POST /api/field-definitions
+   { "label": "Validade", "tipo": "data", "obrigatorio": true }
+   POST /api/field-definitions
+   { "label": "Categoria", "tipo": "select", "opcoes": ["limpeza", "polimento"] }
+   ```
+
+2. Ao criar/editar um produto, os campos custom vão em `extras`:
+   ```http
+   POST /api/produtos
+   {
+     "nome": "Cera Vonixx",
+     "preco": 80.0,
+     "quantidade": 5,
+     "extras": {
+       "marca": "Vonixx",
+       "validade": "2027-01-01",
+       "categoria": "polimento"
+     }
+   }
+   ```
+
+3. O backend valida automaticamente: campos desconhecidos são rejeitados (400), tipos errados retornam mensagem clara, obrigatórios faltando retornam erro, e valores de `select` precisam estar entre as opções.
+
+**Endpoints:**
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `GET/POST` | `/api/field-definitions` | Listar / criar campo custom |
+| `GET/PATCH/DELETE` | `/api/field-definitions/<id>` | Detalhar / editar / soft-delete |
+| `GET/POST` | `/api/produtos` | Listar (com paginação `q`, `page`, `per_page`) / criar |
+| `GET/PATCH/DELETE` | `/api/produtos/<id>` | Detalhar / editar / soft-delete |
+| `POST` | `/api/produtos/<id>/ajustar` | Body `{"delta": int}` — soma na quantidade (não permite negativa) |
+
+**UI:** o app abre uma aba "Estoque" na sidebar (só aparece com o módulo ativo) com duas seções:
+
+- **Produtos:** listagem paginada, criar/editar/excluir, ajuste rápido de quantidade (`±`).
+- **Campos customizados:** CRUD das definições. O formulário de produto é gerado dinamicamente conforme você cadastra/altera campos.
+
+**Para desligar o módulo:** edite `%LOCALAPPDATA%\Gestao\.env` e troque `ENABLE_ESTOQUE=false` (ou desmarque o checkbox no instalador). Os blueprints não são registrados e as tabelas continuam no banco mas vazias/intocadas.
 
 ## Versionamento e auto-update
 

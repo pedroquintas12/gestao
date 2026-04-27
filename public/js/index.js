@@ -231,6 +231,7 @@ const sections = {
   servicos: document.getElementById("page-servicos"),
   vendas: document.getElementById("page-vendas"),
   caixa: document.getElementById("page-caixa"),
+  estoque: document.getElementById("page-estoque"),
 };
 
 function showPage(hash) {

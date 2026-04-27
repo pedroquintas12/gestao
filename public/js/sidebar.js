@@ -4,6 +4,9 @@ export async function initSidebar() {
 
   const aside = sidebarNav.closest("aside.sidebar");
   const version = aside?.dataset.version || "0.0.0";
+  let modules = [];
+  try { modules = JSON.parse(aside?.dataset.modules || "[]"); } catch {}
+  const has = (m) => modules.includes(m);
   aside?.classList.remove("d-none"); // limpa possível resquício
 
   // Busca usuário
@@ -41,15 +44,24 @@ export async function initSidebar() {
              title="Clientes" aria-label="Clientes">
              <i class="bi bi-people"></i><span class="label">Clientes</span></a></li>
 
+      ${has("veiculo") ? `
       <li><a href="/#veiculos" class="nav-link" data-section="veiculos"
              data-bs-toggle="tooltip" data-bs-placement="right"
              title="Veículos" aria-label="Veículos">
              <i class="bi bi-car-front"></i><span class="label">Veículos</span></a></li>
+      ` : ""}
 
       <li><a href="/#servicos" class="nav-link" data-section="servicos"
              data-bs-toggle="tooltip" data-bs-placement="right"
              title="Serviços" aria-label="Serviços">
              <i class="bi bi-wrench-adjustable"></i><span class="label">Serviços</span></a></li>
+
+      ${has("estoque") ? `
+      <li><a href="/#estoque" class="nav-link" data-section="estoque"
+             data-bs-toggle="tooltip" data-bs-placement="right"
+             title="Estoque" aria-label="Estoque">
+             <i class="bi bi-box-seam"></i><span class="label">Estoque</span></a></li>
+      ` : ""}
 
       <li><a href="/#vendas" class="nav-link" data-section="vendas"
              data-bs-toggle="tooltip" data-bs-placement="right"

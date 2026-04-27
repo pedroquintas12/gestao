@@ -25,7 +25,9 @@
 
 <!-- SIDEBAR -->
 <aside class="sidebar p-3"
-       data-version="{{ version }}">
+       data-version="{{ version }}"
+       data-business-type="{{ business_type }}"
+       data-modules="{{ enabled_modules|tojson }}">
   <div class="sidebar-header d-flex align-items-center justify-content-between">
     <div class="logo">
       <img src="/public/favicon.ico" alt="Logo" class="logo-img" style="width:40px;">
@@ -249,6 +251,76 @@
       <nav>
         <ul class="pagination" id="cxPag"></ul>
       </nav>
+    </section>
+
+    <!-- ESTOQUE -->
+    <section class="content-card d-none" id="page-estoque">
+      <div class="card-header">
+        <h2>Estoque</h2>
+      </div>
+
+      <ul class="nav nav-tabs mb-3" id="estTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="tab-produtos" data-bs-toggle="tab" data-bs-target="#pane-produtos" type="button" role="tab">Produtos</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="tab-campos" data-bs-toggle="tab" data-bs-target="#pane-campos" type="button" role="tab">Campos customizados</button>
+        </li>
+      </ul>
+
+      <div class="tab-content">
+        <!-- Aba Produtos -->
+        <div class="tab-pane fade show active" id="pane-produtos" role="tabpanel">
+          <div class="d-flex gap-2 flex-wrap mb-2">
+            <input class="form-control" type="search" placeholder="Buscar por nome" id="prodSearch" style="min-width:260px">
+            <button class="btn btn-primary" id="btnProdBuscar">Buscar</button>
+            <button class="btn btn-light card-btn" data-bs-toggle="modal" data-bs-target="#modalProduto">+ Novo</button>
+          </div>
+
+          <div class="table-wrap">
+            <table class="table align-middle">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Nome</th>
+                  <th>Preço</th>
+                  <th>Qtd</th>
+                  <th>Campos</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="prodTable"></tbody>
+            </table>
+          </div>
+
+          <nav><ul class="pagination" id="prodPag"></ul></nav>
+        </div>
+
+        <!-- Aba Campos -->
+        <div class="tab-pane fade" id="pane-campos" role="tabpanel">
+          <div class="d-flex gap-2 flex-wrap mb-2">
+            <button class="btn btn-light card-btn" data-bs-toggle="modal" data-bs-target="#modalCampo">+ Novo campo</button>
+            <small class="text-muted ms-2 align-self-center">Definições de colunas extras dos produtos. Você pode editar a qualquer momento.</small>
+          </div>
+
+          <div class="table-wrap">
+            <table class="table align-middle">
+              <thead>
+                <tr>
+                  <th>Ordem</th>
+                  <th>Label</th>
+                  <th>Slug</th>
+                  <th>Tipo</th>
+                  <th>Obrig.</th>
+                  <th>Opções</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="campoTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </section>
   </main>
 
@@ -591,6 +663,128 @@
     </div>
   </div>
 
+  <!-- ===== ESTOQUE: modais ===== -->
+
+  <!-- Produto (novo) -->
+  <div class="modal fade" id="modalProduto" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Novo Produto</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <div class="row g-2">
+            <div class="col-12 col-md-6"><label class="form-label">Nome</label><input class="form-control" id="prodNome"></div>
+            <div class="col-6 col-md-3"><label class="form-label">Preço</label><input type="number" step="0.01" class="form-control" id="prodPreco" value="0"></div>
+            <div class="col-6 col-md-3"><label class="form-label">Quantidade</label><input type="number" class="form-control" id="prodQtd" value="0"></div>
+          </div>
+          <hr>
+          <h6 class="mb-2">Campos customizados</h6>
+          <div id="prodExtrasForm" class="row g-2"><div class="col-12 text-muted small">Nenhum campo customizado definido. Cadastre na aba "Campos customizados".</div></div>
+        </div>
+        <div class="modal-footer flex-wrap gap-2">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+          <button class="btn btn-primary" id="btnSalvarProduto">Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Produto (editar) -->
+  <div class="modal fade" id="modalProdutoEdit" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Editar Produto</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <input type="hidden" id="prodEditId">
+          <div class="row g-2">
+            <div class="col-12 col-md-6"><label class="form-label">Nome</label><input class="form-control" id="prodEditNome"></div>
+            <div class="col-6 col-md-3"><label class="form-label">Preço</label><input type="number" step="0.01" class="form-control" id="prodEditPreco"></div>
+            <div class="col-6 col-md-3"><label class="form-label">Quantidade</label><input type="number" class="form-control" id="prodEditQtd"></div>
+          </div>
+          <hr>
+          <h6 class="mb-2">Campos customizados</h6>
+          <div id="prodEditExtrasForm" class="row g-2"></div>
+        </div>
+        <div class="modal-footer flex-wrap gap-2">
+          <button class="btn btn-outline-danger me-auto" id="btnExcluirProduto">Excluir</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+          <button class="btn btn-primary" id="btnAtualizarProduto">Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Campo customizado (novo) -->
+  <div class="modal fade" id="modalCampo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Novo Campo Customizado</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <div class="mb-2"><label class="form-label">Label (rótulo na tela)</label><input class="form-control" id="campoLabel" placeholder="Ex: Marca, Validade, Voltagem"></div>
+          <div class="mb-2">
+            <label class="form-label">Tipo</label>
+            <select class="form-select" id="campoTipo">
+              <option value="texto">Texto</option>
+              <option value="numero">Número</option>
+              <option value="data">Data</option>
+              <option value="booleano">Sim/Não</option>
+              <option value="select">Lista de opções</option>
+            </select>
+          </div>
+          <div class="mb-2 d-none" id="campoOpcoesWrap">
+            <label class="form-label">Opções (uma por linha)</label>
+            <textarea class="form-control" id="campoOpcoes" rows="4" placeholder="opção 1&#10;opção 2"></textarea>
+          </div>
+          <div class="mb-2 form-check">
+            <input class="form-check-input" type="checkbox" id="campoObrigatorio">
+            <label class="form-check-label" for="campoObrigatorio">Obrigatório</label>
+          </div>
+          <div class="mb-2"><label class="form-label">Ordem</label><input type="number" class="form-control" id="campoOrdem" value="0"></div>
+        </div>
+        <div class="modal-footer flex-wrap gap-2">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+          <button class="btn btn-primary" id="btnSalvarCampo">Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Campo customizado (editar) -->
+  <div class="modal fade" id="modalCampoEdit" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Editar Campo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <input type="hidden" id="campoEditId">
+          <div class="mb-2"><label class="form-label">Label</label><input class="form-control" id="campoEditLabel"></div>
+          <div class="mb-2">
+            <label class="form-label">Tipo</label>
+            <select class="form-select" id="campoEditTipo">
+              <option value="texto">Texto</option>
+              <option value="numero">Número</option>
+              <option value="data">Data</option>
+              <option value="booleano">Sim/Não</option>
+              <option value="select">Lista de opções</option>
+            </select>
+          </div>
+          <div class="mb-2 d-none" id="campoEditOpcoesWrap">
+            <label class="form-label">Opções (uma por linha)</label>
+            <textarea class="form-control" id="campoEditOpcoes" rows="4"></textarea>
+          </div>
+          <div class="mb-2 form-check">
+            <input class="form-check-input" type="checkbox" id="campoEditObrigatorio">
+            <label class="form-check-label" for="campoEditObrigatorio">Obrigatório</label>
+          </div>
+          <div class="mb-2"><label class="form-label">Ordem</label><input type="number" class="form-control" id="campoEditOrdem"></div>
+        </div>
+        <div class="modal-footer flex-wrap gap-2">
+          <button class="btn btn-outline-danger me-auto" id="btnExcluirCampo">Excluir</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+          <button class="btn btn-primary" id="btnAtualizarCampo">Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div class="toast" id="toast"></div>
 
@@ -599,5 +793,6 @@
 
   <!-- App JS -->
   <script type="module" src="/public/js/index.js"></script>
+  <script type="module" src="/public/js/estoque.js"></script>
 </body>
 </html>

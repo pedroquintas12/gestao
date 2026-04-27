@@ -5,7 +5,7 @@ import pytest
 
 from app import create_app
 from config.db import db
-from config.business import set_current_type
+from config.business import set_current_type, set_module_override
 from enums.business import BusinessType
 
 # === Importa MODELS (garante que create_all crie as tabelas) ===
@@ -14,6 +14,8 @@ from model.clienteModel import cliente
 from model.veiculoModel import veiculo
 from model.vendaModel import venda, VendaItem
 from model.caixaModel import caixa_lancamento
+from model.produtoModel import Produto
+from model.fieldDefinitionModel import FieldDefinition
 
 
 @pytest.fixture()
@@ -30,7 +32,20 @@ def business_type(request):
 
 
 @pytest.fixture()
-def app(business_type):
+def estoque_module(request):
+    """
+    Override do módulo estoque. Default: deixa pelo mapa do ramo (None).
+    Use com indirect=True para forçar ligado/desligado:
+        @pytest.mark.parametrize("estoque_module", [False], indirect=True)
+    """
+    value = getattr(request, "param", None)
+    set_module_override("estoque", value)
+    yield value
+    set_module_override("estoque", None)
+
+
+@pytest.fixture()
+def app(business_type, estoque_module):
     """App isolado por teste com SQLite em arquivo temporário."""
     db_fd, db_path = tempfile.mkstemp(prefix="test_db_", suffix=".sqlite")
 

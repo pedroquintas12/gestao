@@ -32,6 +32,12 @@ def _register_blueprints(app: Flask) -> None:
         from routes.veiculo import veiculo_bp
         app.register_blueprint(veiculo_bp)
 
+    if is_module_enabled("estoque"):
+        from routes.produto import produto_bp
+        from routes.fieldDefinition import field_definition_bp
+        app.register_blueprint(produto_bp)
+        app.register_blueprint(field_definition_bp)
+
 
 def create_app():
     app = Flask(

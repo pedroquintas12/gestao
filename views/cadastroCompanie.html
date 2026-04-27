@@ -4,79 +4,124 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="/public/favicon.ico" />
-  <title>Cadastrar Empresa</title>
+  <title>Bem-vindo ao Gestao — Configure sua empresa</title>
+
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
   <link rel="stylesheet" href="/public/CSS/companie.css">
-
 </head>
 <body>
-  <main class="page-wrapper">
-    <section class="card">
-      <h1 class="card-title">Cadastrar Empresa</h1>
 
-      <!-- feedback visual -->
-      <div id="toast" class="toast"></div>
+  <main class="setup-wrapper">
+    <header class="setup-header">
+      <div class="brand">
+        <img src="/public/favicon.ico" alt="Gestao" class="brand-logo">
+        <span>Gestao</span>
+      </div>
+      <span class="step-pill"><i class="bi bi-stars"></i> Primeiro acesso</span>
+    </header>
 
-      <form id="companie-form">
-        <div class="form-grid">
+    <section class="setup-card">
+      <div class="setup-intro">
+        <h1>Configure sua empresa</h1>
+        <p>Vamos cadastrar os dados básicos para personalizar o sistema. Você poderá editar tudo depois nas configurações.</p>
+      </div>
 
-          <div class="form-field">
-            <label for="nome">Nome da Empresa <span class="req">*</span></label>
-            <input type="text" id="nome" name="nome" required placeholder="Ex: SprayWash Matriz"/>
-            <small class="err" data-err="nome"></small>
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+      <form id="companie-form" novalidate>
+        <div class="form-layout">
+
+          <!-- Coluna esquerda: dados -->
+          <div class="form-col">
+            <div class="form-field">
+              <label for="nome">Nome da Empresa <span class="req">*</span></label>
+              <div class="input-with-icon">
+                <i class="bi bi-shop"></i>
+                <input type="text" id="nome" name="nome" required autocomplete="organization"
+                       placeholder="Ex: SprayWash Matriz" />
+              </div>
+              <small class="err" data-err="nome"></small>
+            </div>
+
+            <div class="form-field">
+              <label for="cnpj">CNPJ <span class="muted">(opcional)</span></label>
+              <div class="input-with-icon">
+                <i class="bi bi-card-text"></i>
+                <input type="text" id="cnpj" name="cnpj" inputmode="numeric"
+                       maxlength="18" placeholder="00.000.000/0000-00" />
+              </div>
+              <small class="err" data-err="cnpj"></small>
+            </div>
+
+            <div class="form-field">
+              <label for="endereco">Endereço <span class="muted">(opcional)</span></label>
+              <div class="input-with-icon">
+                <i class="bi bi-geo-alt"></i>
+                <input type="text" id="endereco" name="endereco" autocomplete="street-address"
+                       placeholder="Rua, Bairro, Cidade — UF" />
+              </div>
+              <small class="err" data-err="endereco"></small>
+            </div>
+
+            <div class="form-field">
+              <label for="numero">Número <span class="muted">(opcional)</span></label>
+              <div class="input-with-icon">
+                <i class="bi bi-hash"></i>
+                <input type="text" id="numero" name="numero" inputmode="numeric" placeholder="155" />
+              </div>
+              <small class="err" data-err="numero"></small>
+            </div>
           </div>
 
-          <div class="form-field">
-            <label for="cnpj">CNPJ</label>
-            <input type="text" id="cnpj" name="cnpj" placeholder="00.000.000/0000-00"/>
-            <small class="err" data-err="cnpj"></small>
-          </div>
+          <!-- Coluna direita: logo -->
+          <div class="form-col logo-col">
+            <label class="logo-label">Logo da empresa</label>
 
-          <div class="form-field">
-            <label for="endereco">Endereço</label>
-            <input type="text" id="endereco" name="endereco" placeholder="Rua Exemplo, Bairro..."/>
-            <small class="err" data-err="endereco"></small>
-          </div>
+            <label for="imagem" id="dropzone" class="dropzone">
+              <div class="dz-preview" id="preview-wrap">
+                <img id="preview-img" alt="Pré-visualização" />
+                <div id="preview-empty" class="dz-empty">
+                  <i class="bi bi-cloud-arrow-up"></i>
+                  <span class="dz-title">Arraste a imagem aqui</span>
+                  <span class="dz-sub">ou clique para selecionar</span>
+                </div>
+              </div>
+              <input type="file" id="imagem" name="imagem" accept="image/*" hidden />
+            </label>
 
-          <div class="form-field">
-            <label for="numero">Número</label>
-            <input type="text" id="numero" name="numero" placeholder="155"/>
-            <small class="err" data-err="numero"></small>
-          </div>
+            <div class="dz-actions">
+              <button type="button" class="btn-ghost" id="btnTrocarLogo" hidden>
+                <i class="bi bi-arrow-repeat"></i> Trocar
+              </button>
+              <button type="button" class="btn-ghost danger" id="btnRemoverLogo" hidden>
+                <i class="bi bi-trash"></i> Remover
+              </button>
+            </div>
 
-          <div class="form-field">
-            <label for="imagem">Logo / Foto</label>
-            <input type="file" id="imagem" name="imagem" accept="image/*" />
             <small class="err" data-err="imagem"></small>
-
-            <div class="preview-wrapper">
-              <img id="preview-img" alt="Preview da imagem" />
-              <div id="preview-empty">Nenhuma imagem selecionada</div>
-            </div>
-
-            <div class="hint">
-              Máx 10 MB. Aceita JPG, PNG etc.
-            </div>
+            <p class="hint">PNG ou JPG, até 10 MB. Recomendado: imagem quadrada.</p>
           </div>
-
         </div>
 
         <div class="actions">
-          <button type="submit" class="btn-primary">Salvar</button>
+          <button type="submit" class="btn-primary" id="btnSalvar">
+            <span class="lbl"><i class="bi bi-check2-circle"></i> Salvar e continuar</span>
+            <span class="spinner" hidden></span>
+          </button>
         </div>
       </form>
     </section>
 
-    <section class="card">
-      <h2 class="card-title">Buscar Empresa</h2>
-
-      <form id="search-form" class="search-row">
-        <input type="number" id="search-id" min="1" placeholder="ID da empresa" />
-        <button type="submit" class="btn-secondary">Buscar</button>
-      </form>
-
-      <pre id="result-box" class="result-box"></pre>
-    </section>
+    <aside class="login-hint">
+      <i class="bi bi-info-circle"></i>
+      <div>
+        <strong>Após salvar</strong>, você será redirecionado para o login. Use as credenciais padrão na primeira vez:
+        <code>Admin</code> / <code>001305</code> — troque a senha logo em seguida.
+      </div>
+    </aside>
   </main>
 
   <script src="/public/js/companias.js"></script>

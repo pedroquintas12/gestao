@@ -18,6 +18,7 @@ def test_lavajato_endpoint_business_config(client):
     body = res.get_json()
     assert body["type"] == "lavajato"
     assert "veiculo" in body["modules"]
+    assert "estoque" in body["modules"]
 
 
 def test_lavajato_venda_sem_veiculo_retorna_400(client):
@@ -44,7 +45,16 @@ def test_generico_endpoint_business_config(client):
     assert res.status_code == 200
     body = res.get_json()
     assert body["type"] == "generico"
-    assert body["modules"] == []
+    assert "veiculo" not in body["modules"]
+    # estoque é independente do ramo — vem ativo por padrão
+    assert "estoque" in body["modules"]
+
+
+@pytest.mark.parametrize("estoque_module", [False], indirect=True)
+def test_estoque_pode_ser_desligado_em_qualquer_ramo(client):
+    """ENABLE_ESTOQUE=false (simulado via override) desliga o módulo."""
+    body = client.get("/api/config/business").get_json()
+    assert "estoque" not in body["modules"]
 
 
 @pytest.mark.parametrize("business_type", [BusinessType.GENERICO], indirect=True)

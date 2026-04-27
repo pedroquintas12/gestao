@@ -1,23 +1,29 @@
 // =========================
-// CONFIG
+// Tela de primeiro acesso — cadastro de empresa
 // =========================
-const API_BASE = "/api/companias"; 
-// ajuste se for /api/companies ou outro path
+
+const API_BASE = "/api/companias";
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
 // =========================
 // DOM refs
 // =========================
-const form       = document.getElementById("companie-form");
-const toastEl    = document.getElementById("toast");
-const imgInput   = document.getElementById("imagem");
-const previewImg = document.getElementById("preview-img");
-const previewTxt = document.getElementById("preview-empty");
+const form        = document.getElementById("companie-form");
+const toastEl     = document.getElementById("toast");
+const cnpjInput   = document.getElementById("cnpj");
 
-const searchForm = document.getElementById("search-form");
-const searchIdEl = document.getElementById("search-id");
-const resultBox  = document.getElementById("result-box");
+const dropzone    = document.getElementById("dropzone");
+const imgInput    = document.getElementById("imagem");
+const previewImg  = document.getElementById("preview-img");
+const previewEmpty = document.getElementById("preview-empty");
 
-// Vamos segurar o dataURL aqui
+const btnTrocar   = document.getElementById("btnTrocarLogo");
+const btnRemover  = document.getElementById("btnRemoverLogo");
+
+const btnSalvar   = document.getElementById("btnSalvar");
+const btnLbl      = btnSalvar.querySelector(".lbl");
+const btnSpinner  = btnSalvar.querySelector(".spinner");
+
 let imageDataURL = null;
 
 // =========================
@@ -26,157 +32,157 @@ let imageDataURL = null;
 function showToast(msg, type = "success") {
   toastEl.textContent = msg;
   toastEl.className = "toast show " + (type === "error" ? "error" : "success");
-  // some depois
-  setTimeout(() => {
-    toastEl.classList.remove("show");
-  }, 3000);
+  setTimeout(() => toastEl.classList.remove("show"), 3000);
 }
 
 function clearFieldErrors() {
-  document.querySelectorAll(".err").forEach(el => {
-    el.textContent = "";
-  });
+  document.querySelectorAll(".err").forEach(el => (el.textContent = ""));
+  document.querySelectorAll(".input-with-icon.has-error").forEach(el => el.classList.remove("has-error"));
 }
 
-function setFieldError(fieldName, message) {
-  const el = document.querySelector(`.err[data-err="${fieldName}"]`);
-  if (el) {
-    el.textContent = message || "";
-  }
+function setFieldError(field, message) {
+  const el = document.querySelector(`.err[data-err="${field}"]`);
+  if (el) el.textContent = message || "";
+  const input = document.getElementById(field);
+  if (input) input.closest(".input-with-icon")?.classList.add("has-error");
+}
+
+function setLoading(loading) {
+  btnSalvar.disabled = loading;
+  btnLbl.hidden = loading;
+  btnSpinner.hidden = !loading;
 }
 
 // =========================
-// Preview da imagem
+// Máscara de CNPJ (00.000.000/0000-00)
 // =========================
-imgInput.addEventListener("change", () => {
-  const file = imgInput.files && imgInput.files[0];
-  if (!file) {
-    imageDataURL = null;
-    previewImg.style.display = "none";
-    previewTxt.style.display = "block";
-    previewTxt.textContent = "Nenhuma imagem selecionada";
-    return;
-  }
-
-  // tamanho máximo 10 MB (10 * 1024 * 1024)
-  if (file.size > 10 * 1024 * 1024) {
-    showToast("Imagem maior que 10 MB.", "error");
-    imgInput.value = "";
-    imageDataURL = null;
-    previewImg.style.display = "none";
-    previewTxt.style.display = "block";
-    previewTxt.textContent = "Arquivo muito grande";
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    imageDataURL = e.target.result; // tipo "data:image/png;base64,iVBORw0..."
-    previewImg.src = imageDataURL;
-    previewImg.style.display = "block";
-    previewTxt.style.display = "none";
-  };
-  reader.readAsDataURL(file);
+function maskCNPJ(value) {
+  const d = (value || "").replace(/\D/g, "").slice(0, 14);
+  if (!d) return "";
+  if (d.length <= 2) return d;
+  if (d.length <= 5) return `${d.slice(0, 2)}.${d.slice(2)}`;
+  if (d.length <= 8) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5)}`;
+  if (d.length <= 12) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8)}`;
+  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
+}
+cnpjInput.addEventListener("input", (e) => {
+  const pos = e.target.selectionStart;
+  const before = e.target.value.length;
+  e.target.value = maskCNPJ(e.target.value);
+  // tenta manter o cursor
+  const after = e.target.value.length;
+  e.target.setSelectionRange(pos + (after - before), pos + (after - before));
 });
 
 // =========================
-// Submit do form (POST criar empresa)
+// Logo: drag & drop + click
+// =========================
+function applyImage(file) {
+  if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    showToast("Arquivo precisa ser imagem.", "error");
+    return;
+  }
+  if (file.size > MAX_FILE_BYTES) {
+    showToast("Imagem maior que 10 MB.", "error");
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    imageDataURL = e.target.result;
+    previewImg.src = imageDataURL;
+    previewImg.style.display = "block";
+    previewEmpty.style.display = "none";
+    btnTrocar.hidden = false;
+    btnRemover.hidden = false;
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearImage() {
+  imageDataURL = null;
+  imgInput.value = "";
+  previewImg.removeAttribute("src");
+  previewImg.style.display = "none";
+  previewEmpty.style.display = "flex";
+  btnTrocar.hidden = true;
+  btnRemover.hidden = true;
+}
+
+imgInput.addEventListener("change", () => {
+  applyImage(imgInput.files?.[0]);
+});
+
+["dragenter", "dragover"].forEach(evt => {
+  dropzone.addEventListener(evt, (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropzone.classList.add("dragover");
+  });
+});
+["dragleave", "drop"].forEach(evt => {
+  dropzone.addEventListener(evt, (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropzone.classList.remove("dragover");
+  });
+});
+dropzone.addEventListener("drop", (e) => {
+  applyImage(e.dataTransfer.files?.[0]);
+});
+
+btnTrocar.addEventListener("click", (e) => {
+  e.preventDefault();
+  imgInput.click();
+});
+btnRemover.addEventListener("click", (e) => {
+  e.preventDefault();
+  clearImage();
+});
+
+// =========================
+// Submit
 // =========================
 form.addEventListener("submit", async (ev) => {
   ev.preventDefault();
   clearFieldErrors();
 
   const payload = {
-    nome:      document.getElementById("nome").value.trim(),
-    cnpj:      document.getElementById("cnpj").value.trim() || null,
-    endereco:  document.getElementById("endereco").value.trim() || null,
-    numero:    document.getElementById("numero").value.trim() || null,
-    imagem:    imageDataURL || null, // <- o service espera 'imagem'
+    nome:     document.getElementById("nome").value.trim(),
+    cnpj:     cnpjInput.value.trim() || null,
+    endereco: document.getElementById("endereco").value.trim() || null,
+    numero:   document.getElementById("numero").value.trim() || null,
+    imagem:   imageDataURL || null,
   };
 
-  try {
-    const resp = await fetch(API_BASE, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await resp.json().catch(() => ({}));
-
-    if (!resp.ok) {
-      // Tratar erro de validação no formato api_error
-      if (data && data.details) {
-        Object.entries(data.details).forEach(([field, msg]) => {
-          // teu service retorna err = {"nome": "Campo 'nome' Obrigatório", ...}
-          // aqui field seria "nome", "cnpj", etc.
-          setFieldError(field, msg);
-        });
-      }
-
-      // mensagem principal
-      showToast(data.message || "Erro ao salvar", "error");
-      return;
-    }
-
-    // sucesso -> limpar form?
-    showToast("Empresa criada com sucesso! Redirecionando.....", "success");
-    console.log("Criada:", data);
-
-    // Se quiser limpar o form:
-    form.reset();
-    imageDataURL = null;
-    previewImg.style.display = "none";
-    previewTxt.style.display = "block";
-    previewTxt.textContent = "Nenhuma imagem selecionada";
-    setTimeout(() => {
-      // use replace para não voltar pro form ao apertar "Voltar"
-      window.location.replace("/login");
-    }, 1200);
-  } catch (err) {
-    console.error(err);
-    showToast("Falha de rede/conexão.", "error");
-  }
-});
-
-// =========================
-// Buscar empresa por ID (GET /api/companias/:id)
-// =========================
-searchForm.addEventListener("submit", async (ev) => {
-  ev.preventDefault();
-  const id = searchIdEl.value.trim();
-  if (!id) {
-    showToast("Informe um ID para buscar.", "error");
+  if (!payload.nome) {
+    setFieldError("nome", "Nome obrigatório");
     return;
   }
 
+  setLoading(true);
   try {
-    const resp = await fetch(`${API_BASE}/${id}`, {
-      method: "GET",
-      headers: {
-        "Accept": "application/json"
-      }
+    const resp = await fetch(API_BASE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
-
     const data = await resp.json().catch(() => ({}));
 
     if (!resp.ok) {
-      showToast(data.message || "Empresa não encontrada", "error");
-      resultBox.textContent = JSON.stringify(data, null, 2);
+      if (data?.details && typeof data.details === "object") {
+        Object.entries(data.details).forEach(([f, m]) => setFieldError(f, m));
+      }
+      showToast(data?.error || data?.message || "Erro ao salvar", "error");
       return;
     }
 
-    // IMPORTANTE:
-    // O backend retorna o objeto SQLAlchemy.
-    // Garanta que a sua rota está fazendo jsonify/serialize desse objeto
-    // (expondo nome, cnpj, endereco, numero, e talvez flags tipo deleted).
-    // Se ainda não faz, você precisa serializar no controller.
-    resultBox.textContent = JSON.stringify(data, null, 2);
-    showToast("Empresa carregada!", "success");
-
+    showToast("Empresa cadastrada! Redirecionando para o login…", "success");
+    setTimeout(() => window.location.replace("/login"), 1200);
   } catch (err) {
     console.error(err);
-    showToast("Falha de rede/conexão.", "error");
+    showToast("Falha de conexão.", "error");
+  } finally {
+    setLoading(false);
   }
 });

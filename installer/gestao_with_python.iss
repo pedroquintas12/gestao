@@ -86,10 +86,12 @@ Type: filesandordirs; Name: "{app}\venv\Lib\site-packages\pip\_vendor\distlib\__
 [Code]
 var
   BusinessTypePage: TInputOptionWizardPage;
+  ModulesPage: TInputOptionWizardPage;
 
 const
   BUSINESS_LAVAJATO = 0;
   BUSINESS_GENERICO = 1;
+  MODULE_ESTOQUE_IDX = 0;
 
 function GetLocalAppData(): string;
 begin
@@ -110,6 +112,14 @@ begin
     Result := 'lavajato';
 end;
 
+function EstoqueEnabled(): string;
+begin
+  if (ModulesPage <> nil) and ModulesPage.Values[MODULE_ESTOQUE_IDX] then
+    Result := 'true'
+  else
+    Result := 'false';
+end;
+
 procedure InitializeWizard;
 begin
   BusinessTypePage := CreateInputOptionPage(
@@ -123,6 +133,17 @@ begin
   BusinessTypePage.Add('Lava-jato (cadastro de veículos, placas, KM)');
   BusinessTypePage.Add('Genérico (sem veículos)');
   BusinessTypePage.SelectedValueIndex := BUSINESS_LAVAJATO;
+
+  ModulesPage := CreateInputOptionPage(
+    BusinessTypePage.ID,
+    'Módulos opcionais',
+    'Quais módulos extras você quer instalar?',
+    'Estes módulos são independentes do ramo. Você pode ligar/desligar depois editando o arquivo .env.',
+    False, { ExclusiveRadio = false → checkboxes }
+    False
+  );
+  ModulesPage.Add('Estoque (produtos com campos customizáveis)');
+  ModulesPage.Values[MODULE_ESTOQUE_IDX] := True;
 end;
 
 procedure WriteOrReplaceEnvLine(EnvPath, Key, Value: string);
@@ -214,6 +235,7 @@ begin
     { grava/atualiza o ramo escolhido na página do wizard }
     try
       WriteOrReplaceEnvLine(EnvPath, 'BUSINESS_TYPE', SelectedBusinessType());
+      WriteOrReplaceEnvLine(EnvPath, 'ENABLE_ESTOQUE', EstoqueEnabled());
     except
     end;
   end;
