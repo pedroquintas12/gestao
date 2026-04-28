@@ -866,6 +866,12 @@ document.addEventListener("click", (e) => {
 });
 
 async function carregarVeiculosDoClienteVenda(id_cliente) {
+  // Módulo veículo desligado: nem chama o endpoint (que nem existe).
+  if (!moduleEnabled("veiculo")) {
+    elVeiSelect.innerHTML = "";
+    elVeiSelect.disabled = true;
+    return;
+  }
   elVeiSelect.disabled = true;
   elVeiSelect.innerHTML = "<option>Carregando…</option>";
   try {
