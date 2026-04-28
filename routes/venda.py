@@ -18,3 +18,4 @@ venda_bp.delete("/<int:id_venda>/itens/<int:id_item>")(login_required(VC.del_ite
 venda_bp.post("/<int:id_venda>/finalizar")(login_required(VC.finalizar))
 venda_bp.post("/<int:id_venda>/cancelar")(login_required(VC.cancelar))
 venda_bp.get("/<int:orc_id>/orcamento/pdf")(login_required(VC.baixar_orcamento_pdf))
+venda_bp.get("/<int:id_venda>/comprovante/pdf")(login_required(VC.baixar_comprovante_pdf))

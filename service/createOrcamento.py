@@ -85,12 +85,18 @@ def gerar_pdf_orcamento_venda_reportlab(
     venda_obj,
     validade_orcamento="7 dias",
     observacoes_finais="Obrigado pela preferência.",
+    tipo_doc="orcamento",  # "orcamento" | "venda"
 ):
     """
-    Gera e retorna (bytes) um PDF de orçamento referente a uma venda.
-    companie_obj  -> objeto da empresa (tabela companie)
-    venda_obj     -> objeto venda (com cliente, veiculo, itens)
+    Gera e retorna (bytes) um PDF.
+
+    tipo_doc:
+      - "orcamento": layout original (proposta com validade).
+      - "venda":     comprovante de venda fechada — sem validade, com
+                     selo de "VENDA FINALIZADA" e forma de pagamento em
+                     destaque, área de assinatura mantida.
     """
+    is_venda = (tipo_doc == "venda")
 
     # ==========================
     # 1. Coleta de dados
@@ -254,14 +260,22 @@ def gerar_pdf_orcamento_venda_reportlab(
     c.drawString(text_block_x, cursor_y - 18, f"CNPJ: {empresa_cnpj}")
     c.drawString(text_block_x, cursor_y - 28, f"{empresa_end}, Nº {empresa_num}")
 
-    # bloco meta do orçamento, alinhado à direita
-    meta_lines = [
-        f"ORÇAMENTO Nº {numero_orcamento:04d}",
-        f"Data: {data_emissao}",
-        f"Validade: {validade_orcamento}",
-        f"Status: {status_venda}",
-        f"Pagamento: {forma_pagamento}",
-    ]
+    # bloco meta do documento, alinhado à direita
+    if is_venda:
+        meta_lines = [
+            f"COMPROVANTE Nº {numero_orcamento:04d}",
+            f"Emissão: {data_emissao}",
+            "VENDA FINALIZADA",
+            f"Pago via: {forma_pagamento}",
+        ]
+    else:
+        meta_lines = [
+            f"ORÇAMENTO Nº {numero_orcamento:04d}",
+            f"Data: {data_emissao}",
+            f"Validade: {validade_orcamento}",
+            f"Status: {status_venda}",
+            f"Pagamento: {forma_pagamento}",
+        ]
     c.setFont("Helvetica", 8)
     text_w = max(c.stringWidth(l, "Helvetica", 8) for l in meta_lines)
     meta_x = right_x - text_w
@@ -306,7 +320,10 @@ def gerar_pdf_orcamento_venda_reportlab(
     # 6. Itens do Orçamento
     # ==========================
 
-    p_itens_title = Paragraph("Itens do Orçamento", style_section_title)
+    p_itens_title = Paragraph(
+        "Itens da Venda" if is_venda else "Itens do Orçamento",
+        style_section_title,
+    )
     w, h = p_itens_title.wrapOn(c, max_width, 100)
 
     # quebra de página se faltar espaço antes da tabela
@@ -427,11 +444,19 @@ def gerar_pdf_orcamento_venda_reportlab(
     obs_title.drawOn(c, margin_left, cursor_y - h)
     cursor_y -= (h + 6)
 
-    obs_text = (
-        f"<b>Validade do orçamento:</b> {validade_orcamento}. "
-        "Valores sujeitos a alteração após esse prazo.<br/><br/>"
-        f"{observacoes_finais}"
-    )
+    if is_venda:
+        obs_text = (
+            f"<b>Venda finalizada</b> em {data_emissao}.<br/>"
+            f"<b>Pagamento:</b> {forma_pagamento}.<br/>"
+            f"Esse documento é um comprovante interno (não substitui nota fiscal).<br/><br/>"
+            f"{observacoes_finais}"
+        )
+    else:
+        obs_text = (
+            f"<b>Validade do orçamento:</b> {validade_orcamento}. "
+            "Valores sujeitos a alteração após esse prazo.<br/><br/>"
+            f"{observacoes_finais}"
+        )
     p_obs = Paragraph(obs_text, style_normal)
     w, h = p_obs.wrapOn(c, max_width, 200)
     p_obs.drawOn(c, margin_left, cursor_y - h)
@@ -460,6 +485,13 @@ def gerar_pdf_orcamento_venda_reportlab(
     c.setLineWidth(0.5)
     c.line(linha_esq_x1, linha_y, linha_esq_x2, linha_y)
     c.line(linha_dir_x1, linha_y, linha_dir_x2, linha_y)
+
+    # Rótulo "Assinatura" acima de cada linha
+    c.setFont("Helvetica", 7)
+    c.setFillColor(colors.HexColor("#64748b"))
+    c.drawCentredString(linha_esq_x1 + col_width / 2, linha_y + 4, "Assinatura da empresa")
+    c.drawCentredString(linha_dir_x1 + col_width / 2, linha_y + 4, "Assinatura do cliente")
+    c.setFillColor(colors.black)
 
     empresa_label = f"{empresa_nome}  -  CNPJ: {empresa_cnpj}"
     cliente_label = f"{cli_nome}  -  {cli_doc}"

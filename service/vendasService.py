@@ -515,36 +515,42 @@ class vendaService:
             return api_error(500, f"Falha ao cancelar venda: {e}")
 
     @staticmethod
-    def baixar_orcamento_pdf(orc_id: int):
+    def _gerar_pdf(venda_id: int, tipo_doc: str):
+        """Helper interno: monta o PDF (orçamento ou comprovante de venda)."""
         from service.createOrcamento import gerar_pdf_orcamento_venda_reportlab
-        from flask import make_response
-        from utils.api_error import api_error
-        from config.db import db
         from model.companieModel import companie as Companie
-        from model.vendaModel import venda as Venda
 
+        empresa = Companie.query.get(1)
+        if not empresa:
+            return api_error(404, "Empresa não encontrada, cadastre uma empresa antes de gerar PDF.")
+
+        venda_obj = Venda.query.get(venda_id)
+        if not venda_obj:
+            return api_error(404, "Venda não encontrada")
+
+        if tipo_doc == "venda" and venda_obj.status != "FINALIZADA":
+            return api_error(400, "Só é possível gerar comprovante de uma venda finalizada.")
+
+        db.session.refresh(venda_obj)
+
+        pdf_bytes = gerar_pdf_orcamento_venda_reportlab(
+            companie_obj=empresa,
+            venda_obj=venda_obj,
+            validade_orcamento="7 dias",
+            observacoes_finais="Obrigado pela preferência.",
+            tipo_doc=tipo_doc,
+        )
+
+        prefixo = "comprovante" if tipo_doc == "venda" else "orcamento"
+        resp = make_response(pdf_bytes)
+        resp.headers["Content-Type"] = "application/pdf"
+        resp.headers["Content-Disposition"] = f'attachment; filename="{prefixo}_{venda_id:04d}.pdf"'
+        return resp
+
+    @staticmethod
+    def baixar_orcamento_pdf(orc_id: int):
         try:
-            empresa = Companie.query.get(1)
-            if not empresa:
-                return api_error(404, "Empresa não encontrada, cadastre uma empresa antes de gerar orçamentos.")
-
-            venda_obj = Venda.query.get(orc_id)
-            if not venda_obj:
-                return api_error(404, "Orçamento (venda) não encontrado")
-
-            db.session.refresh(venda_obj)
-
-            pdf_bytes = gerar_pdf_orcamento_venda_reportlab(
-                companie_obj=empresa,
-                venda_obj=venda_obj,
-                validade_orcamento="7 dias",
-                observacoes_finais="Obrigado pela preferência.",
-            )
-
-            resp = make_response(pdf_bytes)
-            resp.headers["Content-Type"] = "application/pdf"
-            resp.headers["Content-Disposition"] = f'attachment; filename="orcamento_{orc_id:04d}.pdf"'
-            return resp
+            return vendaService._gerar_pdf(orc_id, tipo_doc="orcamento")
         except FileNotFoundError as e:
             logger.exception(f"Template/arquivo não encontrado ao gerar PDF {e}")
             return api_error(500, f"Recurso de PDF ausente: {e}")
@@ -554,3 +560,18 @@ class vendaService:
         except Exception as e:
             logger.exception(f"Erro inesperado ao gerar PDF {e}")
             return api_error(500, f"Erro ao gerar PDF: {e}")
+
+    @staticmethod
+    def baixar_comprovante_pdf(venda_id: int):
+        """Comprovante de venda — exige status FINALIZADA."""
+        try:
+            return vendaService._gerar_pdf(venda_id, tipo_doc="venda")
+        except FileNotFoundError as e:
+            logger.exception(f"Template/arquivo não encontrado ao gerar comprovante {e}")
+            return api_error(500, f"Recurso de PDF ausente: {e}")
+        except SQLAlchemyError as e:
+            logger.exception(f"Erro SQLAlchemy ao preparar comprovante {e}")
+            return api_error(500, "Falha no banco ao preparar comprovante", details=str(e))
+        except Exception as e:
+            logger.exception(f"Erro inesperado ao gerar comprovante {e}")
+            return api_error(500, f"Erro ao gerar comprovante: {e}")

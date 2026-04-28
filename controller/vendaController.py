@@ -115,3 +115,9 @@ class vendaController:
         if isinstance(res, dict) and res.get("error"):
             return jsonify(res), res.get("status", 400)
         return res
+
+    def baixar_comprovante_pdf(id_venda):
+        res = vendaService.baixar_comprovante_pdf(id_venda)
+        if isinstance(res, dict) and res.get("error"):
+            return jsonify(res), res.get("status", 400)
+        return res

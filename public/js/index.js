@@ -961,6 +961,17 @@ window.openVendaModal = async (id) => {
     }
   }
 
+  // Botão de PDF muda conforme status:
+  // - FINALIZADA → baixa "Comprovante de Venda" via /comprovante/pdf
+  // - Outros     → baixa "Orçamento" via /orcamento/pdf
+  if (btnVendaPDF) {
+    const isFinal = (v.status === "FINALIZADA");
+    btnVendaPDF.dataset.tipo = isFinal ? "venda" : "orcamento";
+    btnVendaPDF.innerHTML = isFinal
+      ? '<i class="bi bi-receipt"></i><span>Comprovante</span>'
+      : '<i class="bi bi-file-earmark-pdf"></i><span>Orçamento</span>';
+  }
+
   if (elVendaPagamentoBadge) {
     elVendaPagamentoBadge.textContent = v.pagamento || "-";
   }
@@ -1058,14 +1069,15 @@ btnVendaCancelar?.addEventListener("click", async () => {
   }
 });
 
-// ========== baixar PDF ==========
+// ========== baixar PDF (orçamento ou comprovante) ==========
 btnVendaPDF?.addEventListener("click", async () => {
   if (!currentVendaId) {
     showToast("Nenhuma venda selecionada", "error");
     return;
   }
+  const tipo = btnVendaPDF.dataset.tipo === "venda" ? "comprovante" : "orcamento";
   try {
-    const res = await fetch(`/api/vendas/${currentVendaId}/orcamento/pdf`, {
+    const res = await fetch(`/api/vendas/${currentVendaId}/${tipo}/pdf`, {
       method: "GET",
       credentials: "include",
     });
@@ -1097,7 +1109,7 @@ btnVendaPDF?.addEventListener("click", async () => {
     const blobUrl = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = blobUrl;
-    a.download = `orcamento_${String(currentVendaId).padStart(4, "0")}.pdf`;
+    a.download = `${tipo}_${String(currentVendaId).padStart(4, "0")}.pdf`;
     document.body.appendChild(a);
     a.click();
     a.remove();

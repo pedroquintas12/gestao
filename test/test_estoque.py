@@ -298,6 +298,36 @@ def test_cancelar_venda_finalizada_devolve_estoque(client):
     assert client.get(f"/api/produtos/{prod['id_produto']}").get_json()["produto"]["quantidade"] == 10
 
 
+def test_comprovante_pdf_so_apos_finalizar(client):
+    """`/comprovante/pdf` exige status FINALIZADA; `/orcamento/pdf` não."""
+    cli, vei = _criar_cliente_e_veiculo(client)
+    svc = client.post("/api/servicos", json={"nome": "S", "valor": 10}).get_json()["servico"]
+    # Empresa precisa existir para o gerador montar o cabeçalho
+    client.post("/api/companias", json={"nome": "Empresa Teste"})
+
+    venda = client.post("/api/vendas", json={
+        "id_cliente": cli["id_cliente"], "id_veiculo": vei["id_veiculo"]
+    }).get_json()["venda"]
+    client.post(f"/api/vendas/{venda['id_venda']}/itens", json={
+        "id_servico": svc["id_servico"], "quantidade": 1
+    })
+
+    # Antes de finalizar: orçamento OK, comprovante 400
+    res_orc = client.get(f"/api/vendas/{venda['id_venda']}/orcamento/pdf")
+    assert res_orc.status_code == 200
+    assert res_orc.headers["Content-Type"] == "application/pdf"
+
+    res_com = client.get(f"/api/vendas/{venda['id_venda']}/comprovante/pdf")
+    assert res_com.status_code == 400
+
+    # Depois de finalizar: comprovante OK
+    client.post(f"/api/vendas/{venda['id_venda']}/finalizar", json={"forma_pagamento": "PIX"})
+    res_com = client.get(f"/api/vendas/{venda['id_venda']}/comprovante/pdf")
+    assert res_com.status_code == 200
+    assert res_com.headers["Content-Type"] == "application/pdf"
+    assert b"%PDF" in res_com.data[:8]
+
+
 def test_finalizar_idempotente_nao_debita_2x(client):
     cli, vei = _criar_cliente_e_veiculo(client)
     prod = client.post("/api/produtos", json={
