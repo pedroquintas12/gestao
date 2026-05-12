@@ -81,7 +81,13 @@ def app(business_type, estoque_module):
 
 @pytest.fixture()
 def client(app):
-    return app.test_client()
+    c = app.test_client()
+    # Todas as rotas /api/* são login_required; injeta uma sessão fake
+    # para que os testes possam bater nas rotas reais sem precisar logar.
+    with c.session_transaction() as sess:
+        sess["user_id"] = 1
+        sess["is_admin"] = True
+    return c
 
 
 # =======================

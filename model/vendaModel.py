@@ -53,6 +53,10 @@ class VendaItem(db.Model):
     Item de venda. Cada linha é OU um serviço OU um produto do estoque
     (XOR garantido por CheckConstraint). Ao finalizar a venda, produtos
     têm sua quantidade abatida automaticamente.
+
+    `parent_item_id` permite que um item-produto seja "filho" de um item-serviço:
+    o filho não soma no total e aparece como subitem no PDF (consumo de
+    insumo). Filho só pode ser produto; pai só pode ser serviço.
     """
     __tablename__ = "venda_itens"
     __table_args__ = (
@@ -60,12 +64,21 @@ class VendaItem(db.Model):
             "(id_servico IS NULL) <> (id_produto IS NULL)",
             name="ck_venda_itens_xor"
         ),
+        db.CheckConstraint(
+            "(parent_item_id IS NULL) OR (id_produto IS NOT NULL)",
+            name="ck_venda_itens_filho_e_produto"
+        ),
     )
 
     id_item    = db.Column(db.Integer, primary_key=True, autoincrement=True)
     id_venda   = db.Column(db.Integer, db.ForeignKey("vendas.id_venda"), nullable=False)
     id_servico = db.Column(db.Integer, db.ForeignKey("servico.id_servico"), nullable=True)
     id_produto = db.Column(db.Integer, db.ForeignKey("produto.id_produto"), nullable=True)
+    parent_item_id = db.Column(
+        db.Integer,
+        db.ForeignKey("venda_itens.id_item", ondelete="CASCADE"),
+        nullable=True,
+    )
 
     # snapshot
     descricao  = db.Column(db.String(200), nullable=False)
@@ -76,9 +89,18 @@ class VendaItem(db.Model):
     venda   = db.relationship("venda", back_populates="itens")
     servico = db.relationship("servico")
     produto = db.relationship("Produto")
+    filhos = db.relationship(
+        "VendaItem",
+        backref=db.backref("parent", remote_side="VendaItem.id_item"),
+        cascade="all, delete-orphan",
+        single_parent=True,
+        lazy="selectin",
+    )
 
     @property
     def subtotal(self):
+        if self.parent_item_id is not None:
+            return 0
         return (self.preco_unit * self.quantidade) - self.desconto
 
     @property
@@ -91,6 +113,7 @@ class VendaItem(db.Model):
             "id_venda": self.id_venda,
             "id_servico": self.id_servico,
             "id_produto": self.id_produto,
+            "parent_item_id": self.parent_item_id,
             "tipo": self.tipo,
             "descricao": self.descricao,
             "preco_unit": float(self.preco_unit),

@@ -35,7 +35,9 @@
 
   <!-- Sidebar -->
 <aside class="sidebar p-3"
-       data-version="{{ version }}">
+       data-version="{{ version }}"
+       data-business-type="{{ business_type }}"
+       data-modules='{{ enabled_modules|tojson }}'>
   <div class="sidebar-header d-flex align-items-center justify-content-between">
     <div class="logo">
       <img src="/public/favicon.ico" alt="Logo" class="logo-img" style="width:40px;">
@@ -126,6 +128,12 @@
             <option value="CARTAO">Cartão</option>
             <option value="DINHEIRO">Dinheiro</option>
             <option value="NÃO_PAGO">Não pago</option>
+          </select>
+          <select class="form-select" id="repServico" style="max-width:220px">
+            <option value="">Serviço (todos)</option>
+          </select>
+          <select class="form-select" id="repProduto" style="max-width:220px" hidden>
+            <option value="">Produto (todos)</option>
           </select>
           <button class="btn btn-primary" id="btnRepFiltrar">Filtrar</button>
         </div>

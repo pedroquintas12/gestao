@@ -148,16 +148,62 @@
     getEl('btnRepFiltrar') && (getEl('btnRepFiltrar').onclick = carregarRelatorio);
     getEl('btnRepCSV') && (getEl('btnRepCSV').onclick = exportCSV);
 
-    // Carrega ao entrar
-    carregarRelatorio().catch(e => console.error('carregarRelatorio onload:', e));
+    // Popula selects de serviço/produto e carrega ao entrar
+    popularFiltrosCatalogo()
+      .catch(e => console.warn('popularFiltrosCatalogo:', e))
+      .finally(() => {
+        carregarRelatorio().catch(e => console.error('carregarRelatorio onload:', e));
+      });
   }
 
   // ===== estado dos relatórios =====
   let repStart = null, repEnd = null;
   let repPage = 1, repPer = 12, repStatus = '', repPagamento = '';
+  let repServico = '', repProduto = '';
   let chartTop = null;
   let cacheVendasExibidas = [];
   let cacheTodasVendas = []; // todas do período
+
+  function getEnabledModules() {
+    try {
+      const raw = document.querySelector('.sidebar')?.getAttribute('data-modules');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  async function popularFiltrosCatalogo() {
+    try {
+      const svcResp = await api('/api/servicos', { params: { per_page: 200 }, retries: 1 }).catch(() => null);
+      const sel = getEl('repServico');
+      if (sel && svcResp?.servicos) {
+        const opts = svcResp.servicos
+          .map(s => `<option value="${s.id_servico}">${(s.nome ?? '').toString().replace(/</g,'&lt;')}</option>`)
+          .join('');
+        sel.insertAdjacentHTML('beforeend', opts);
+      }
+    } catch (e) {
+      console.warn('popular servicos:', e);
+    }
+
+    if (!getEnabledModules().includes('estoque')) return;
+
+    try {
+      const pselect = getEl('repProduto');
+      if (!pselect) return;
+      pselect.hidden = false;
+      const pResp = await api('/api/produtos', { params: { per_page: 200 }, retries: 1 }).catch(() => null);
+      if (pResp?.produtos) {
+        const opts = pResp.produtos
+          .map(p => `<option value="${p.id_produto}">${(p.nome ?? '').toString().replace(/</g,'&lt;')}</option>`)
+          .join('');
+        pselect.insertAdjacentHTML('beforeend', opts);
+      }
+    } catch (e) {
+      console.warn('popular produtos:', e);
+    }
+  }
 
   // datas padrão: últimos 30 dias
   function setDefaultDates() {
@@ -233,7 +279,7 @@
 
   // ========= Núcleo sem endpoints extras =========
   // 1) Pagina /api/vendas até trazer tudo do período
-  async function fetchTodasVendasPeriodo({ start, end, status, pagamento }) {
+  async function fetchTodasVendasPeriodo({ start, end, status, pagamento, id_servico, id_produto }) {
     let page = 1, per = 100;
     let total = 0, acumulado = [];
     let loopGuard = 0, MAX_LOOPS = 200; // proteção contra paginação quebrada
@@ -249,7 +295,12 @@
       }
 
       const payload = await api('/api/vendas', {
-        params: { page, per_page: per, start_date: start, end_date: end, status, pagamento},
+        params: {
+          page, per_page: per,
+          data_ini: start, data_fim: end,
+          status, pagamento,
+          id_servico, id_produto,
+        },
         retries: 1
       }).catch(e => {
         console.error('fetchTodasVendasPeriodo page failed:', e);
@@ -427,10 +478,13 @@
     try {
       repStatus = getEl('repStatus')?.value || '';
       repPagamento = getEl('repPag')?.value || '';
+      repServico = getEl('repServico')?.value || '';
+      repProduto = getEl('repProduto')?.value || '';
 
       // a) traz TODAS as vendas do período (com filtros)
       const vendas = await fetchTodasVendasPeriodo({
-        start: repStart, end: repEnd, status: repStatus, pagamento: repPagamento
+        start: repStart, end: repEnd, status: repStatus, pagamento: repPagamento,
+        id_servico: repServico, id_produto: repProduto,
       });
       cacheTodasVendas = Array.isArray(vendas) ? vendas : [];
 

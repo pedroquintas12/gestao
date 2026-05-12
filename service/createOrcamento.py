@@ -130,12 +130,20 @@ def gerar_pdf_orcamento_venda_reportlab(
     desconto_total = Decimal("0")
     linhas_itens = []
 
-    has_produto_no_orcamento = False
-    for item in venda_obj.itens:
+    # Agrupa filhos (subitens vinculados a um serviço) sob o respectivo pai.
+    # Filhos não somam no total e aparecem como linha indentada sem valores.
+    itens_todos = list(venda_obj.itens)
+    pais = [it for it in itens_todos if getattr(it, "parent_item_id", None) is None]
+    filhos_por_pai: dict[int, list] = {}
+    for it in itens_todos:
+        pid = getattr(it, "parent_item_id", None)
+        if pid is not None:
+            filhos_por_pai.setdefault(pid, []).append(it)
+
+    for item in pais:
         desc_item = item.descricao or ""
         is_produto = bool(getattr(item, "id_produto", None))
         if is_produto:
-            has_produto_no_orcamento = True
             desc_item = f"[Produto] {desc_item}"
 
         preco_unit = Decimal(str(item.preco_unit or 0))
@@ -153,6 +161,17 @@ def gerar_pdf_orcamento_venda_reportlab(
             f"R$ {_fmt_money(desc_desconto)}",
             f"R$ {_fmt_money(linha_total)}",
         ])
+
+        for filho in filhos_por_pai.get(item.id_item, []):
+            f_qtd = int(filho.quantidade or 0)
+            f_nome = filho.descricao or ""
+            linhas_itens.append([
+                f"    ↳ {f_nome} (×{f_qtd})",
+                "",
+                "",
+                "",
+                "",
+            ])
 
     total_final = venda_obj.total or 0
 

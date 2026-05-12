@@ -673,6 +673,42 @@
     </div>
   </div>
 
+  <!-- Vincular produto a item-serviço (subitem / insumo) -->
+  <div class="modal fade" id="modalVincularProduto" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Vincular produto ao serviço</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small mb-3" id="vincServicoLabel">
+            Vinculando ao serviço selecionado.
+          </p>
+          <input type="hidden" id="vincParentItemId">
+          <div class="mb-3">
+            <label class="form-label">Produto do estoque</label>
+            <select id="vincProdutoSelect" class="form-select">
+              <option value="">— selecione —</option>
+            </select>
+            <small id="vincEstoqueHint" class="text-muted"></small>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Quantidade consumida</label>
+            <input id="vincQtd" type="number" min="1" class="form-control" value="1">
+          </div>
+          <p class="text-muted small mb-0">
+            Esse produto não terá valor próprio no orçamento — aparece como subcategoria do serviço. O estoque é debitado ao finalizar a venda.
+          </p>
+        </div>
+        <div class="modal-footer flex-wrap gap-2">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-primary" id="btnConfirmarVincular">Vincular</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== ESTOQUE: modais ===== -->
 
   <!-- Produto (novo) -->

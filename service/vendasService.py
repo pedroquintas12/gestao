@@ -76,6 +76,8 @@ class vendaService:
     def _recalc_total_sql(v: Venda) -> None:
         """
         Recalcula o total somando direto no banco (robusto contra coleção desatualizada).
+        Subitens (parent_item_id NOT NULL) são insumos vinculados a um serviço
+        e não somam no total.
         """
         soma = db.session.query(
             func.coalesce(
@@ -84,7 +86,10 @@ class vendaService:
                 ),
                 0
             )
-        ).filter(VendaItem.id_venda == v.id_venda).scalar()
+        ).filter(
+            VendaItem.id_venda == v.id_venda,
+            VendaItem.parent_item_id.is_(None),
+        ).scalar()
         v.total = _as_decimal(soma, "0")
 
     @staticmethod
@@ -148,10 +153,16 @@ class vendaService:
         Adiciona item a uma venda. Cada item é OU serviço OU produto (XOR).
         Se já existir item para o mesmo serviço/produto, apenas incrementa
         quantidade e acumula desconto. NUNCA atribui em item.subtotal.
+
+        Se `parent_item_id` vier no payload, o item é vinculado a um item-serviço
+        existente da mesma venda — só pode ser produto, não soma no total, mas
+        debita estoque normalmente na finalização. Idempotência: se o mesmo
+        produto já estiver vinculado ao mesmo pai, incrementa a quantidade.
         """
         try:
             id_servico = int(data.get("id_servico") or 0)
             id_produto = int(data.get("id_produto") or 0)
+            parent_item_id = int(data.get("parent_item_id") or 0) or None
             qtd = int(data.get("quantidade") or 1)
             desconto = _as_decimal(data.get("desconto") or 0, "0")
 
@@ -161,6 +172,10 @@ class vendaService:
                 return api_error(
                     400, "Informe id_servico OU id_produto (um, não ambos)"
                 )
+            if parent_item_id and not id_produto:
+                return api_error(
+                    400, "Subitem vinculado deve ser um produto (id_produto)"
+                )
 
             with db.session.begin():
                 v: Venda | None = db.session.execute(
@@ -168,6 +183,20 @@ class vendaService:
                 ).scalar_one_or_none()
                 if not v:
                     return api_error(404, "Venda não encontrada")
+
+                if parent_item_id:
+                    pai = db.session.execute(
+                        select(VendaItem).where(
+                            VendaItem.id_item == parent_item_id,
+                            VendaItem.id_venda == v.id_venda,
+                        )
+                    ).scalar_one_or_none()
+                    if not pai:
+                        return api_error(404, "Item pai não encontrado nesta venda")
+                    if not pai.id_servico:
+                        return api_error(400, "Item pai precisa ser um serviço")
+                    if pai.parent_item_id is not None:
+                        return api_error(400, "Não é permitido vínculo aninhado")
 
                 if id_servico:
                     s = db.session.execute(
@@ -188,9 +217,15 @@ class vendaService:
                     nome  = getattr(p, "nome", "Produto")
                     filtro = (VendaItem.id_produto == id_produto)
 
+                # idempotência: agrupa por (servico/produto, parent_item_id)
+                parent_filter = (
+                    VendaItem.parent_item_id == parent_item_id
+                    if parent_item_id
+                    else VendaItem.parent_item_id.is_(None)
+                )
                 it: VendaItem | None = db.session.execute(
                     select(VendaItem)
-                    .where(VendaItem.id_venda == v.id_venda, filtro)
+                    .where(VendaItem.id_venda == v.id_venda, filtro, parent_filter)
                     .with_for_update()
                 ).scalar_one_or_none()
 
@@ -206,6 +241,7 @@ class vendaService:
                         preco_unit=preco,
                         quantidade=qtd,
                         desconto=desconto,
+                        parent_item_id=parent_item_id,
                     )
                     if id_servico:
                         kwargs["id_servico"] = id_servico
@@ -265,6 +301,8 @@ class vendaService:
         pagamento: Optional[str] = None,
         data_ini: Optional[datetime] = None,            # inclusive (>=)
         data_fim_exclusive: Optional[datetime] = None,  # exclusivo (<)
+        id_servico: Optional[int] = None,
+        id_produto: Optional[int] = None,
         page: Optional[int] = 1,
         per_page: Optional[int] = 24
     ) -> Tuple[list, int]:
@@ -283,6 +321,21 @@ class vendaService:
                 base = base.filter(Venda.status == status)
             if pagamento:
                 base = base.filter(Venda.pagamento == pagamento)
+
+            if id_servico:
+                base = base.join(
+                    VendaItem,
+                    (VendaItem.id_venda == Venda.id_venda) &
+                    (VendaItem.id_servico == int(id_servico))
+                )
+
+            if id_produto:
+                # produto direto (item solto) OU vinculado como subitem
+                base = base.join(
+                    VendaItem,
+                    (VendaItem.id_venda == Venda.id_venda) &
+                    (VendaItem.id_produto == int(id_produto))
+                )
 
             if q:
                 like = f"%{q.strip()}%"

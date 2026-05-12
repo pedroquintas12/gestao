@@ -1005,29 +1005,177 @@ window.openVendaModal = async (id) => {
 // Render da tabela de itens já existentes
 function renderItensTabela(itens) {
   if (!itensTableBody) return;
-  itensTableBody.innerHTML = (itens || [])
-    .map((it) => {
-      const isProd = it.tipo === "produto" || it.id_produto;
-      const tipoBadge = isProd
-        ? '<span class="badge text-bg-info ms-1" style="font-size:.65rem;">PRODUTO</span>'
-        : '<span class="badge text-bg-secondary ms-1" style="font-size:.65rem;">SERVIÇO</span>';
-      return `
+  const lista = Array.isArray(itens) ? itens : [];
+  const pais = lista.filter((it) => !it.parent_item_id);
+  const filhosPorPai = lista.reduce((acc, it) => {
+    if (it.parent_item_id) {
+      (acc[it.parent_item_id] = acc[it.parent_item_id] || []).push(it);
+    }
+    return acc;
+  }, {});
+
+  const estoqueOn = getEnabledModules().includes("estoque");
+
+  const linhaItem = (it) => {
+    const isProd = it.tipo === "produto" || it.id_produto;
+    const tipoBadge = isProd
+      ? '<span class="badge text-bg-info ms-1" style="font-size:.65rem;">PRODUTO</span>'
+      : '<span class="badge text-bg-secondary ms-1" style="font-size:.65rem;">SERVIÇO</span>';
+
+    const podeVincular = !isProd && estoqueOn;
+    const vincBtn = podeVincular
+      ? `<button class="btn btn-sm btn-outline-primary me-1"
+                 onclick="vincularProdutoAoItem(${it.id_item}, '${(it.descricao || '').replace(/'/g, "\\'")}')">
+            <i class="bi bi-link-45deg"></i> Vincular produto
+         </button>`
+      : "";
+
+    return `
     <tr>
       <td>${it.descricao}${tipoBadge}</td>
       <td>R$ ${money(it.preco_unit)}</td>
       <td>${it.quantidade}</td>
       <td>R$ ${money(it.desconto)}</td>
       <td>R$ ${money(it.subtotal)}</td>
-      <td style="text-align:right;">
+      <td style="text-align:right; white-space:nowrap;">
+        ${vincBtn}
         <button class="btn btn-sm btn-outline-danger" onclick="remItem(${currentVendaId}, ${it.id_item})">
           Remover
         </button>
       </td>
     </tr>
   `;
+  };
+
+  const linhaFilho = (f) => `
+    <tr class="table-light">
+      <td style="padding-left:2.25rem;">
+        <span class="text-muted">↳</span>
+        <em>${f.descricao}</em>
+        <span class="badge text-bg-light text-muted ms-1" style="font-size:.65rem;">INSUMO</span>
+      </td>
+      <td class="text-muted">—</td>
+      <td>${f.quantidade}</td>
+      <td class="text-muted">—</td>
+      <td class="text-muted">—</td>
+      <td style="text-align:right;">
+        <button class="btn btn-sm btn-outline-danger" onclick="remItem(${currentVendaId}, ${f.id_item})">
+          Remover
+        </button>
+      </td>
+    </tr>
+  `;
+
+  itensTableBody.innerHTML = pais
+    .map((p) => {
+      const filhos = (filhosPorPai[p.id_item] || []).map(linhaFilho).join("");
+      return linhaItem(p) + filhos;
     })
     .join("");
 }
+
+function getEnabledModules() {
+  try {
+    const raw = document.querySelector(".sidebar")?.getAttribute("data-modules");
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+// ========== vincular produto a um item-serviço ==========
+let _cacheProdutosVinc = null;
+
+async function carregarProdutosVinc() {
+  if (_cacheProdutosVinc) return _cacheProdutosVinc;
+  try {
+    const r = await api("/api/produtos", { params: { per_page: 200 } });
+    _cacheProdutosVinc = Array.isArray(r?.produtos) ? r.produtos : [];
+  } catch {
+    _cacheProdutosVinc = [];
+  }
+  return _cacheProdutosVinc;
+}
+
+window.vincularProdutoAoItem = async (parentItemId, nomeServico) => {
+  if (!getEnabledModules().includes("estoque")) {
+    showToast("Módulo de estoque desativado", "error");
+    return;
+  }
+  const modalEl = document.getElementById("modalVincularProduto");
+  if (!modalEl) return;
+  const label = document.getElementById("vincServicoLabel");
+  if (label) label.textContent = `Vinculando ao serviço: ${nomeServico}`;
+  document.getElementById("vincParentItemId").value = parentItemId;
+  document.getElementById("vincQtd").value = 1;
+  const select = document.getElementById("vincProdutoSelect");
+  const hint = document.getElementById("vincEstoqueHint");
+  if (hint) hint.textContent = "";
+  if (select) {
+    const produtos = await carregarProdutosVinc();
+    select.innerHTML =
+      '<option value="">— selecione —</option>' +
+      produtos
+        .map(
+          (p) =>
+            `<option value="${p.id_produto}" data-estoque="${p.quantidade}" data-nome="${(p.nome || "").replace(/"/g, "&quot;")}">${p.nome} (estoque: ${p.quantidade})</option>`
+        )
+        .join("");
+    select.onchange = () => {
+      const opt = select.selectedOptions[0];
+      const estoque = opt ? Number(opt.dataset.estoque || 0) : 0;
+      if (hint) hint.textContent = opt && opt.value ? `Estoque atual: ${estoque}` : "";
+    };
+  }
+  bootstrap.Modal.getOrCreateInstance(modalEl).show();
+};
+
+document.getElementById("btnConfirmarVincular")?.addEventListener("click", async () => {
+  const parentItemId = Number(document.getElementById("vincParentItemId")?.value || 0);
+  const id_produto = Number(document.getElementById("vincProdutoSelect")?.value || 0);
+  const quantidade = Number(document.getElementById("vincQtd")?.value || 1);
+
+  if (!parentItemId || !id_produto) {
+    showToast("Selecione um produto", "error");
+    return;
+  }
+  if (quantidade <= 0) {
+    showToast("Quantidade inválida", "error");
+    return;
+  }
+
+  const opt = document.getElementById("vincProdutoSelect")?.selectedOptions?.[0];
+  const estoqueDisp = opt ? Number(opt.dataset.estoque || 0) : 0;
+  if (quantidade > estoqueDisp) {
+    const ok = confirm(
+      `Estoque atual: ${estoqueDisp}. Consumo informado: ${quantidade}.\n` +
+      `Ao finalizar a venda, o estoque ficará negativo. Continuar?`
+    );
+    if (!ok) return;
+  }
+
+  try {
+    const res = await api(`/api/vendas/${currentVendaId}/itens`, {
+      method: "POST",
+      body: {
+        id_produto,
+        quantidade,
+        parent_item_id: parentItemId,
+      },
+    });
+    if (!res) return;
+    _cacheProdutosVinc = null;
+    showToast("Produto vinculado ao serviço");
+    bootstrap.Modal.getOrCreateInstance(
+      document.getElementById("modalVincularProduto")
+    ).hide();
+    await openVendaModal(res.venda.id_venda);
+    loadVendas();
+  } catch (e) {
+    console.error(e);
+    showToast("Erro ao vincular produto", "error");
+  }
+});
 
 // ========== salvar cabeçalho venda (descrição & forma_pagamento) ==========
 btnSalvarCabecalho?.addEventListener("click", async () => {

@@ -32,6 +32,18 @@ class vendaController:
         status    = args.get("status") or None
         pagamento = args.get("pagamento") or None
 
+        def _opt_int(name):
+            raw = args.get(name)
+            if raw in (None, ""):
+                return None
+            try:
+                return int(raw)
+            except ValueError:
+                return None
+
+        id_servico = _opt_int("id_servico")
+        id_produto = _opt_int("id_produto")
+
         # datas
         data_ini = _parse_ymd_to_dt(args.get("data_ini"))
         data_fim = _parse_ymd_to_dt(args.get("data_fim"))
@@ -56,6 +68,8 @@ class vendaController:
             pagamento=pagamento,
             data_ini=data_ini,
             data_fim_exclusive=data_fim_exclusive,
+            id_servico=id_servico,
+            id_produto=id_produto,
             page=page,
             per_page=per_page,
         )
