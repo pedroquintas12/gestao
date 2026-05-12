@@ -1295,6 +1295,105 @@ btnVendaFechar?.addEventListener("click", () => {
   vendaModal?.hide();
 });
 
+// ==================== MODO SCANNER (modal de venda) ====================
+const vmScannerBlock = document.getElementById("vmScannerBlock");
+const vmScannerInput = document.getElementById("vmScannerInput");
+const vmScanInfo = document.getElementById("vmScanInfo");
+let vmScanCount = 0;
+let vmScanFocusGuard = null;
+
+function vmScannerOpen() {
+  if (!vmScannerBlock || !vmScannerInput) return;
+  vmScannerBlock.hidden = false;
+  vmScanCount = 0;
+  if (vmScanInfo) vmScanInfo.textContent = "";
+  vmScannerInput.value = "";
+  vmScannerInput.focus();
+  // Mantém o foco no input do scanner enquanto o modo estiver ativo.
+  if (!vmScanFocusGuard) {
+    vmScanFocusGuard = (ev) => {
+      if (vmScannerBlock.hidden) return;
+      // Não rouba foco de inputs nativos abertos (ex: prompt/confirm).
+      const target = ev.target;
+      const isFormField =
+        target && target.closest &&
+        target.closest("input, textarea, select, button, [contenteditable=true]");
+      if (target === vmScannerInput) return;
+      if (!isFormField) {
+        vmScannerInput.focus();
+      }
+    };
+    document.addEventListener("focusin", vmScanFocusGuard);
+  }
+}
+
+function vmScannerClose() {
+  if (!vmScannerBlock) return;
+  vmScannerBlock.hidden = true;
+  if (vmScanFocusGuard) {
+    document.removeEventListener("focusin", vmScanFocusGuard);
+    vmScanFocusGuard = null;
+  }
+}
+
+async function vmScannerHandleEnter() {
+  if (!currentVendaId) {
+    showToast("Abra uma venda primeiro", "error");
+    return;
+  }
+  const codigo = (vmScannerInput?.value || "").trim();
+  vmScannerInput.value = "";
+  if (!codigo) return;
+
+  try {
+    const r = await fetch(`/api/produtos/by-codigo/${encodeURIComponent(codigo)}`, {
+      credentials: "include",
+    });
+    if (r.status === 404) {
+      showToast(`Código "${codigo}" não cadastrado`, "error");
+      return;
+    }
+    if (!r.ok) {
+      showToast("Erro ao buscar código", "error");
+      return;
+    }
+    const data = await r.json();
+    const p = data?.produto;
+    if (!p?.id_produto) {
+      showToast("Resposta inválida", "error");
+      return;
+    }
+
+    const res = await api(`/api/vendas/${currentVendaId}/itens`, {
+      method: "POST",
+      body: { id_produto: p.id_produto, quantidade: 1, desconto: 0 },
+    });
+    if (!res) return;
+
+    vmScanCount += 1;
+    if (vmScanInfo) vmScanInfo.textContent = `(${vmScanCount} lido${vmScanCount > 1 ? "s" : ""})`;
+    showToast(`+ ${p.nome}`);
+    await openVendaModal(res.venda.id_venda);
+    loadVendas();
+    // openVendaModal pode roubar foco; reabrir scanner se ainda ativo.
+    if (!vmScannerBlock.hidden) vmScannerInput.focus();
+  } catch (e) {
+    console.error(e);
+    showToast("Falha ao adicionar item", "error");
+  }
+}
+
+document.getElementById("btnVmScannerOn")?.addEventListener("click", vmScannerOpen);
+document.getElementById("btnVmScannerOff")?.addEventListener("click", vmScannerClose);
+vmScannerInput?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    vmScannerHandleEnter();
+  }
+});
+// Fecha o scanner ao fechar o modal de venda.
+document.getElementById("modalVendaEdit")?.addEventListener("hidden.bs.modal", vmScannerClose);
+
 // ==================== SEGMENTED CONTROLS (tipo item + pagamento) ====================
 function syncSegmentedTipo(value) {
   document.querySelectorAll(".vm-segmented .vm-seg").forEach((b) => {

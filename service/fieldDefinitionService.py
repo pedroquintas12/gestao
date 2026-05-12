@@ -24,7 +24,7 @@ SLUG_RE = re.compile(r"^[a-z][a-z0-9_]{0,49}$")
 # Slugs proibidos por entidade — colidem com colunas do model.
 RESERVED_NAMES_BY_ENTITY: dict[str, set[str]] = {
     "produto": {
-        "id_produto", "nome", "preco", "quantidade",
+        "id_produto", "nome", "preco", "quantidade", "codigo_barras",
         "extras", "deleted", "created_at", "updated_at",
     },
 }

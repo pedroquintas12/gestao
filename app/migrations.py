@@ -21,6 +21,31 @@ def run_migrations(db) -> None:
     inspector = inspect(engine)
     if "venda_itens" in inspector.get_table_names():
         _migrate_venda_itens(db, inspector)
+    if "produto" in inspector.get_table_names():
+        _migrate_produto(db, inspector)
+
+
+def _migrate_produto(db, inspector) -> None:
+    """Garante coluna `codigo_barras` + índice único parcial."""
+    cols = {c["name"] for c in inspector.get_columns("produto")}
+    has_codigo = "codigo_barras" in cols
+
+    indexes = {idx["name"] for idx in inspector.get_indexes("produto")}
+    has_index = "ux_produto_codigo_barras" in indexes
+
+    if has_codigo and has_index:
+        return
+
+    with db.engine.begin() as conn:
+        if not has_codigo:
+            conn.execute(text("ALTER TABLE produto ADD COLUMN codigo_barras VARCHAR(64)"))
+            logger.info("Coluna codigo_barras adicionada em produto.")
+        if not has_index:
+            conn.execute(text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS ux_produto_codigo_barras "
+                "ON produto(codigo_barras) WHERE codigo_barras IS NOT NULL"
+            ))
+            logger.info("Índice ux_produto_codigo_barras criado.")
 
 
 def _migrate_venda_itens(db, inspector) -> None:

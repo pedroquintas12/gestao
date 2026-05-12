@@ -263,16 +263,20 @@ async function carregarProdutos() {
   const tbody = document.getElementById("prodTable");
   const lista = data?.produtos || [];
   if (!lista.length) {
-    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">Nenhum produto.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">Nenhum produto.</td></tr>`;
   } else {
     tbody.innerHTML = lista.map(p => {
       const extrasResumo = Object.entries(p.extras || {})
         .slice(0, 3)
         .map(([k, v]) => `<span class="badge text-bg-light me-1">${escapeHtml(k)}: ${escapeHtml(String(v))}</span>`)
         .join("");
+      const codigo = p.codigo_barras
+        ? `<code class="small">${escapeHtml(p.codigo_barras)}</code>`
+        : '<span class="text-muted small">—</span>';
       return `<tr data-id="${p.id_produto}">
         <td>${p.id_produto}</td>
         <td>${escapeHtml(p.nome)}</td>
+        <td>${codigo}</td>
         <td>R$ ${money(p.preco)}</td>
         <td>${p.quantidade}</td>
         <td>${extrasResumo || '<span class="text-muted small">—</span>'}</td>
@@ -338,6 +342,9 @@ function setupModalProdutoNovo() {
     document.getElementById("prodNome").value = "";
     document.getElementById("prodPreco").value = "0";
     document.getElementById("prodQtd").value = "0";
+    const cb = document.getElementById("prodCodigoBarras");
+    if (cb && !cb.dataset.prefilled) cb.value = "";
+    delete cb?.dataset.prefilled;
     renderExtrasForm(document.getElementById("prodExtrasForm"));
   });
 
@@ -346,6 +353,7 @@ function setupModalProdutoNovo() {
       nome: document.getElementById("prodNome").value.trim(),
       preco: Number(document.getElementById("prodPreco").value || 0),
       quantidade: Number(document.getElementById("prodQtd").value || 0),
+      codigo_barras: document.getElementById("prodCodigoBarras")?.value.trim() || null,
       extras: coletarExtras(document.getElementById("prodExtrasForm")),
     };
     try {
@@ -364,6 +372,7 @@ function setupModalProdutoEdit() {
       nome: document.getElementById("prodEditNome").value.trim(),
       preco: Number(document.getElementById("prodEditPreco").value || 0),
       quantidade: Number(document.getElementById("prodEditQtd").value || 0),
+      codigo_barras: document.getElementById("prodEditCodigoBarras")?.value.trim() || null,
       extras: coletarExtras(document.getElementById("prodEditExtrasForm")),
     };
     try {
@@ -394,8 +403,52 @@ async function abrirEditProduto(id) {
   document.getElementById("prodEditNome").value = p.nome;
   document.getElementById("prodEditPreco").value = p.preco;
   document.getElementById("prodEditQtd").value = p.quantidade;
+  const cb = document.getElementById("prodEditCodigoBarras");
+  if (cb) cb.value = p.codigo_barras || "";
   renderExtrasForm(document.getElementById("prodEditExtrasForm"), p.extras || {});
   bootstrap.Modal.getOrCreateInstance(document.getElementById("modalProdutoEdit")).show();
+}
+
+// ============================================================
+//  SCANNER (aba Estoque)
+// ============================================================
+async function scanProdutoNoEstoque() {
+  const input = document.getElementById("prodScan");
+  if (!input) return;
+  const codigo = input.value.trim();
+  if (!codigo) return;
+  input.value = "";
+
+  try {
+    const r = await fetch(`/api/produtos/by-codigo/${encodeURIComponent(codigo)}`, {
+      credentials: "include",
+    });
+    if (r.status === 404) {
+      if (confirm(`Produto não encontrado para "${codigo}". Cadastrar novo?`)) {
+        const cb = document.getElementById("prodCodigoBarras");
+        if (cb) { cb.value = codigo; cb.dataset.prefilled = "1"; }
+        bootstrap.Modal.getOrCreateInstance(
+          document.getElementById("modalProduto")
+        ).show();
+      }
+      input.focus();
+      return;
+    }
+    if (!r.ok) {
+      showToast("Erro ao buscar código", "error");
+      input.focus();
+      return;
+    }
+    const data = await r.json();
+    if (data?.produto?.id_produto) {
+      await abrirEditProduto(data.produto.id_produto);
+    }
+  } catch (e) {
+    console.error(e);
+    showToast("Falha ao buscar produto", "error");
+  } finally {
+    input.focus();
+  }
 }
 
 // ============================================================
@@ -415,6 +468,12 @@ async function ativarSecao() {
     });
     document.getElementById("prodSearch")?.addEventListener("keypress", (e) => {
       if (e.key === "Enter") document.getElementById("btnProdBuscar").click();
+    });
+    document.getElementById("prodScan")?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        scanProdutoNoEstoque();
+      }
     });
     inited = true;
   }

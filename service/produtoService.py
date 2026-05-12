@@ -8,7 +8,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Optional, Tuple
 
 from sqlalchemy import or_
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from config.db import db
 from config.logger import get_logger
@@ -115,6 +115,18 @@ def validate_extras(extras: dict | None) -> tuple[dict, dict]:
     return out, err
 
 
+def _normalize_codigo_barras(raw) -> Optional[str]:
+    """Trim e remoção de espaços internos. Vazio vira None."""
+    if raw is None:
+        return None
+    s = str(raw).strip()
+    if not s:
+        return None
+    # leitores podem enviar caracteres de controle; removemos espaços.
+    s = "".join(s.split())
+    return s[:64]
+
+
 def _validate_payload(data: dict, *, partial: bool = False) -> tuple[dict, dict]:
     err: dict = {}
     out: dict = {}
@@ -133,6 +145,9 @@ def _validate_payload(data: dict, *, partial: bool = False) -> tuple[dict, dict]
             out["quantidade"] = int(data.get("quantidade") or 0)
         except (TypeError, ValueError):
             err["quantidade"] = "Campo 'quantidade' deve ser inteiro"
+
+    if "codigo_barras" in data:
+        out["codigo_barras"] = _normalize_codigo_barras(data.get("codigo_barras"))
 
     if "extras" in data or not partial:
         extras_norm, extras_err = validate_extras(data.get("extras"))
@@ -155,7 +170,10 @@ class produtoService:
             base = Produto.query.filter(Produto.deleted == 0)
             if q:
                 like = f"%{q.strip()}%"
-                base = base.filter(or_(Produto.nome.ilike(like)))
+                base = base.filter(or_(
+                    Produto.nome.ilike(like),
+                    Produto.codigo_barras.ilike(like),
+                ))
 
             total = base.count()
             page = max(1, int(page))
@@ -178,6 +196,18 @@ class produtoService:
         return p
 
     @staticmethod
+    def get_by_codigo(codigo: str):
+        codigo = _normalize_codigo_barras(codigo)
+        if not codigo:
+            return api_error(400, "Código vazio")
+        p = (Produto.query
+             .filter(Produto.deleted == 0, Produto.codigo_barras == codigo)
+             .first())
+        if not p:
+            return api_error(404, "Produto não encontrado")
+        return p
+
+    @staticmethod
     def create(data: dict):
         payload, err = _validate_payload(data, partial=False)
         if err:
@@ -188,11 +218,16 @@ class produtoService:
                 nome=payload["nome"],
                 preco=payload["preco"],
                 quantidade=payload.get("quantidade", 0),
+                codigo_barras=payload.get("codigo_barras"),
                 extras=payload.get("extras") or {},
             )
             db.session.add(p)
             db.session.commit()
             return p
+        except IntegrityError as e:
+            db.session.rollback()
+            logger.warning(f"Código de barras duplicado: {e}")
+            return api_error(409, "Já existe um produto com esse código de barras")
         except SQLAlchemyError as e:
             db.session.rollback()
             logger.exception(f"Erro ao criar produto {e}")
@@ -208,13 +243,17 @@ class produtoService:
         if err:
             return api_error(400, "Erro no payload", details=err)
 
-        for attr in ("nome", "preco", "quantidade", "extras"):
+        for attr in ("nome", "preco", "quantidade", "codigo_barras", "extras"):
             if attr in payload:
                 setattr(p, attr, payload[attr])
 
         try:
             db.session.commit()
             return p
+        except IntegrityError as e:
+            db.session.rollback()
+            logger.warning(f"Código de barras duplicado: {e}")
+            return api_error(409, "Já existe um produto com esse código de barras")
         except SQLAlchemyError as e:
             db.session.rollback()
             logger.exception(f"Erro ao atualizar produto {e}")

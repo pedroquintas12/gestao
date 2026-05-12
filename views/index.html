@@ -272,9 +272,19 @@
         <!-- Aba Produtos -->
         <div class="tab-pane fade show active" id="pane-produtos" role="tabpanel">
           <div class="d-flex gap-2 flex-wrap mb-2">
-            <input class="form-control" type="search" placeholder="Buscar por nome" id="prodSearch" style="min-width:260px">
+            <input class="form-control" type="search" placeholder="Buscar por nome ou código" id="prodSearch" style="min-width:260px">
             <button class="btn btn-primary" id="btnProdBuscar">Buscar</button>
             <button class="btn btn-light card-btn" data-bs-toggle="modal" data-bs-target="#modalProduto">+ Novo</button>
+          </div>
+
+          <div class="d-flex gap-2 flex-wrap mb-3 align-items-center">
+            <div class="input-group" style="max-width:360px;">
+              <span class="input-group-text bg-light"><i class="bi bi-upc-scan"></i></span>
+              <input class="form-control" id="prodScan" type="text"
+                     placeholder="Escanear ou digitar código de barras…"
+                     autocomplete="off">
+            </div>
+            <small class="text-muted">Enter abre o produto; código não cadastrado oferece criar novo.</small>
           </div>
 
           <div class="table-wrap">
@@ -283,6 +293,7 @@
                 <tr>
                   <th>#</th>
                   <th>Nome</th>
+                  <th>Cód. barras</th>
                   <th>Preço</th>
                   <th>Qtd</th>
                   <th>Campos</th>
@@ -521,12 +532,39 @@
           <!-- COLUNA PRINCIPAL: adicionar item + itens -->
           <section class="vm-main">
 
+            <div class="vm-section vm-scanner needs-estoque" id="vmScannerBlock" hidden>
+              <header class="vm-section-head">
+                <h3 class="vm-section-title">
+                  <i class="bi bi-upc-scan text-muted"></i>
+                  Modo scanner
+                  <span class="vm-count" id="vmScanInfo"></span>
+                </h3>
+                <button type="button" class="vm-iconbtn" id="btnVmScannerOff" title="Sair do modo scanner">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </header>
+              <div class="vm-section-body">
+                <div class="vm-search-wrap">
+                  <i class="bi bi-upc vm-search-icon"></i>
+                  <input id="vmScannerInput" class="vm-input vm-search-input"
+                         placeholder="Escaneie ou digite o código e pressione Enter…"
+                         autocomplete="off">
+                </div>
+                <small class="text-muted d-block mt-2">
+                  Cada Enter adiciona o produto à venda. Foco volta automaticamente após cada leitura.
+                </small>
+              </div>
+            </div>
+
             <div class="vm-section">
               <header class="vm-section-head">
                 <h3 class="vm-section-title">
                   <i class="bi bi-plus-circle text-muted"></i>
                   Adicionar item
                 </h3>
+                <button type="button" class="vm-iconbtn vm-iconbtn-link needs-estoque" id="btnVmScannerOn">
+                  <i class="bi bi-upc-scan"></i> Modo scanner
+                </button>
               </header>
 
               <div class="vm-add-grid">
@@ -750,6 +788,14 @@
             <div class="col-12 col-md-6"><label class="form-label">Nome</label><input class="form-control" id="prodNome"></div>
             <div class="col-6 col-md-3"><label class="form-label">Preço</label><input type="number" step="0.01" class="form-control" id="prodPreco" value="0"></div>
             <div class="col-6 col-md-3"><label class="form-label">Quantidade</label><input type="number" class="form-control" id="prodQtd" value="0"></div>
+            <div class="col-12">
+              <label class="form-label">Código de barras</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-upc-scan"></i></span>
+                <input class="form-control" id="prodCodigoBarras" placeholder="Escaneie ou digite (opcional)" autocomplete="off">
+              </div>
+              <small class="text-muted">Único por produto. Deixe em branco se o item não tem código.</small>
+            </div>
           </div>
           <hr>
           <h6 class="mb-2">Campos customizados</h6>
@@ -774,6 +820,13 @@
             <div class="col-12 col-md-6"><label class="form-label">Nome</label><input class="form-control" id="prodEditNome"></div>
             <div class="col-6 col-md-3"><label class="form-label">Preço</label><input type="number" step="0.01" class="form-control" id="prodEditPreco"></div>
             <div class="col-6 col-md-3"><label class="form-label">Quantidade</label><input type="number" class="form-control" id="prodEditQtd"></div>
+            <div class="col-12">
+              <label class="form-label">Código de barras</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-upc-scan"></i></span>
+                <input class="form-control" id="prodEditCodigoBarras" placeholder="Escaneie ou digite (opcional)" autocomplete="off">
+              </div>
+            </div>
           </div>
           <hr>
           <h6 class="mb-2">Campos customizados</h6>

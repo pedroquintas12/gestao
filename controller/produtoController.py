@@ -50,6 +50,10 @@ class produtoController:
         res = produtoService.get(id_produto)
         return service_result_to_response(res, key="produto")
 
+    def get_by_codigo(codigo):
+        res = produtoService.get_by_codigo(codigo)
+        return service_result_to_response(res, key="produto")
+
     def update(id_produto):
         res = produtoService.update(id_produto, request.get_json(force=True) or {})
         return service_result_to_response(res, key="produto")
