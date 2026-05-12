@@ -1350,12 +1350,12 @@ function tipoItem() {
 }
 
 async function buscarItensRemoto(q) {
-  if (!q || q.trim().length < 2) return [];
   const isProd = tipoItem() === "produto";
+  const termo = (q || "").trim();
   try {
-    const resp = await api(isProd ? "/api/produtos" : "/api/servicos", {
-      params: { q: q.trim(), page: 1, per_page: 10 },
-    });
+    const params = { page: 1, per_page: 10 };
+    if (termo) params.q = termo;
+    const resp = await api(isProd ? "/api/produtos" : "/api/servicos", { params });
     if (!resp) return [];
     return isProd ? (resp.produtos || []) : (resp.servicos || []);
   } catch {
@@ -1466,15 +1466,18 @@ const buscarServicosDebounced = debounce(async (texto) => {
   renderSugestoesServicos(lista);
 }, 300);
 
+// Filtra conforme o usuário digita (qualquer tamanho de texto, inclusive vazio).
 elBuscaServico?.addEventListener("input", (e) => {
-  const q = e.target.value || "";
-  if (q.length < 2) {
-    elSugestoesServico.style.display = "none";
-    elSugestoesServico.innerHTML = "";
-    return;
-  }
-  buscarServicosDebounced(q);
+  buscarServicosDebounced(e.target.value || "");
 });
+
+// Ao focar/clicar no input, já abre a lista com os primeiros 10 (ou filtrados).
+async function abrirSugestoes() {
+  const lista = await buscarItensRemoto(elBuscaServico?.value || "");
+  renderSugestoesServicos(lista);
+}
+elBuscaServico?.addEventListener("focus", abrirSugestoes);
+elBuscaServico?.addEventListener("click", abrirSugestoes);
 
 elTipoItem?.addEventListener("change", () => {
   resetServicoBusca();

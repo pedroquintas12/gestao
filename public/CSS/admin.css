@@ -466,7 +466,12 @@ body {
   border: 1px solid var(--vm-border);
   border-radius: var(--vm-radius);
   box-shadow: var(--vm-shadow-sm);
-  overflow: hidden;
+  /* Sem overflow:hidden: o autocomplete precisa transbordar o card.
+     A tabela arredonda os cantos inferiores pelo .vm-itens-wrap abaixo. */
+}
+.vm-section-head {
+  border-top-left-radius: var(--vm-radius);
+  border-top-right-radius: var(--vm-radius);
 }
 .vm-section-head {
   display: flex;
@@ -638,7 +643,12 @@ body {
 .autocomplete-item:hover { background: var(--vm-bg-softer); }
 
 /* -------- tabela itens -------- */
-.vm-itens-wrap { position: relative; }
+.vm-itens-wrap {
+  position: relative;
+  overflow: hidden;
+  border-bottom-left-radius: var(--vm-radius);
+  border-bottom-right-radius: var(--vm-radius);
+}
 .vm-itens-table {
   width: 100%;
   border-collapse: collapse;
