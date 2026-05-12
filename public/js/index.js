@@ -990,6 +990,7 @@ window.openVendaModal = async (id) => {
     const formaAtual =
       v.pagamento && v.pagamento !== "NÃO_PAGO" ? v.pagamento : "PIX";
     cartFormaSelect.value = formaAtual;
+    cartFormaSelect.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
   // zera seleção de serviço novo
@@ -1015,56 +1016,62 @@ function renderItensTabela(itens) {
   }, {});
 
   const estoqueOn = getEnabledModules().includes("estoque");
+  const escapeQuote = (s) => (s || "").replace(/'/g, "\\'");
 
   const linhaItem = (it) => {
     const isProd = it.tipo === "produto" || it.id_produto;
-    const tipoBadge = isProd
-      ? '<span class="badge text-bg-info ms-1" style="font-size:.65rem;">PRODUTO</span>'
-      : '<span class="badge text-bg-secondary ms-1" style="font-size:.65rem;">SERVIÇO</span>';
+    const badge = isProd
+      ? '<span class="vm-badge vm-badge-prod">Produto</span>'
+      : '<span class="vm-badge vm-badge-svc">Serviço</span>';
+
+    const meta = [];
+    if (Number(it.preco_unit) > 0) meta.push(`Unit. R$ ${money(it.preco_unit)}`);
+    if (Number(it.desconto) > 0) meta.push(`Desc. R$ ${money(it.desconto)}`);
 
     const podeVincular = !isProd && estoqueOn;
     const vincBtn = podeVincular
-      ? `<button class="btn btn-sm btn-outline-primary me-1"
-                 onclick="vincularProdutoAoItem(${it.id_item}, '${(it.descricao || '').replace(/'/g, "\\'")}')">
-            <i class="bi bi-link-45deg"></i> Vincular produto
+      ? `<button class="vm-iconbtn vm-iconbtn-link"
+                 onclick="vincularProdutoAoItem(${it.id_item}, '${escapeQuote(it.descricao)}')"
+                 title="Vincular produto">
+            <i class="bi bi-link-45deg"></i> Vincular
          </button>`
       : "";
 
     return `
-    <tr>
-      <td>${it.descricao}${tipoBadge}</td>
-      <td>R$ ${money(it.preco_unit)}</td>
-      <td>${it.quantidade}</td>
-      <td>R$ ${money(it.desconto)}</td>
-      <td>R$ ${money(it.subtotal)}</td>
-      <td style="text-align:right; white-space:nowrap;">
+    <tr class="vm-row-main">
+      <td>
+        <div>${it.descricao}${badge}</div>
+        ${meta.length ? `<span class="vm-row-meta">${meta.join(" · ")}</span>` : ""}
+      </td>
+      <td class="text-center">${it.quantidade}</td>
+      <td class="text-end">R$ ${money(it.subtotal)}</td>
+      <td class="vm-th-act">
         ${vincBtn}
-        <button class="btn btn-sm btn-outline-danger" onclick="remItem(${currentVendaId}, ${it.id_item})">
-          Remover
+        <button class="vm-iconbtn vm-iconbtn-danger"
+                onclick="remItem(${currentVendaId}, ${it.id_item})"
+                title="Remover">
+          <i class="bi bi-trash"></i>
         </button>
       </td>
-    </tr>
-  `;
+    </tr>`;
   };
 
   const linhaFilho = (f) => `
-    <tr class="table-light">
-      <td style="padding-left:2.25rem;">
-        <span class="text-muted">↳</span>
+    <tr class="vm-row-child">
+      <td class="vm-child-desc">
         <em>${f.descricao}</em>
-        <span class="badge text-bg-light text-muted ms-1" style="font-size:.65rem;">INSUMO</span>
+        <span class="vm-badge vm-badge-insumo">Insumo</span>
       </td>
-      <td class="text-muted">—</td>
-      <td>${f.quantidade}</td>
-      <td class="text-muted">—</td>
-      <td class="text-muted">—</td>
-      <td style="text-align:right;">
-        <button class="btn btn-sm btn-outline-danger" onclick="remItem(${currentVendaId}, ${f.id_item})">
-          Remover
+      <td class="text-center">${f.quantidade}</td>
+      <td class="text-end text-muted">—</td>
+      <td class="vm-th-act">
+        <button class="vm-iconbtn vm-iconbtn-danger"
+                onclick="remItem(${currentVendaId}, ${f.id_item})"
+                title="Remover">
+          <i class="bi bi-trash"></i>
         </button>
       </td>
-    </tr>
-  `;
+    </tr>`;
 
   itensTableBody.innerHTML = pais
     .map((p) => {
@@ -1072,6 +1079,17 @@ function renderItensTabela(itens) {
       return linhaItem(p) + filhos;
     })
     .join("");
+
+  // estado vazio + contagem
+  const wrap = itensTableBody.closest(".vm-itens-wrap");
+  if (wrap) wrap.classList.toggle("is-empty", pais.length === 0);
+  const counter = document.getElementById("vmItensCount");
+  if (counter) counter.textContent = pais.length ? `(${pais.length})` : "";
+
+  // espelha total no resumo lateral
+  const totalEl = document.getElementById("editVendaTotal");
+  const summary = document.getElementById("vmSummaryTotal");
+  if (totalEl && summary) summary.textContent = totalEl.textContent;
 }
 
 function getEnabledModules() {
@@ -1276,6 +1294,50 @@ btnVendaFecharX?.addEventListener("click", () => {
 btnVendaFechar?.addEventListener("click", () => {
   vendaModal?.hide();
 });
+
+// ==================== SEGMENTED CONTROLS (tipo item + pagamento) ====================
+function syncSegmentedTipo(value) {
+  document.querySelectorAll(".vm-segmented .vm-seg").forEach((b) => {
+    b.classList.toggle("active", b.dataset.tipo === value);
+  });
+}
+function syncSegmentedPay(value) {
+  document.querySelectorAll(".vm-pay-options .vm-pay").forEach((b) => {
+    b.classList.toggle("active", b.dataset.pay === value);
+  });
+}
+
+document.querySelectorAll(".vm-segmented .vm-seg").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const sel = document.getElementById("editItemTipo");
+    if (!sel) return;
+    sel.value = btn.dataset.tipo;
+    syncSegmentedTipo(btn.dataset.tipo);
+    sel.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+});
+
+document.querySelectorAll(".vm-pay-options .vm-pay").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const sel = document.getElementById("cartForma");
+    if (!sel) return;
+    sel.value = btn.dataset.pay;
+    syncSegmentedPay(btn.dataset.pay);
+    sel.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+});
+
+// Quando o select escondido muda (carregamento da venda, etc), reflete no segmented.
+document.getElementById("cartForma")?.addEventListener("change", (e) => {
+  syncSegmentedPay(e.target.value);
+});
+document.getElementById("editItemTipo")?.addEventListener("change", (e) => {
+  syncSegmentedTipo(e.target.value);
+});
+
+// Estado inicial
+syncSegmentedTipo("servico");
+syncSegmentedPay("PIX");
 
 // ==================== AUTOCOMPLETE DE SERVIÇOS / PRODUTOS NO MODAL ====================
 const elTipoItem = document.getElementById("editItemTipo");

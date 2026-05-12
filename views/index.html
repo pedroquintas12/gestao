@@ -494,180 +494,209 @@
       <div class="modal-content venda-modal">
 
         <!-- HEADER -->
-        <div class="venda-modal-header">
-          <div class="venda-head-top d-flex flex-wrap justify-content-between gap-3">
-            <div class="venda-head-left d-flex flex-column gap-1">
-              <div class="venda-head-line d-flex flex-wrap gap-2 align-items-center">
-                <span class="venda-head-title" id="editVendaTitulo">
-                  Venda #—
-                </span>
-                <span class="status-chip chip-open" id="editVendaStatus">EM_ANDAMENTO</span>
-                <span class="status-chip chip-pay" id="editVendaPagamentoBadge">NÃO_PAGO</span>
-              </div>
-              <div class="venda-head-total">
-                Total: <strong id="editVendaTotal">R$ 0,00</strong>
-              </div>
+        <header class="vm-header">
+          <div class="vm-header-info">
+            <div class="vm-header-title">
+              <span class="vm-title" id="editVendaTitulo">Venda #—</span>
+              <span class="status-chip chip-open" id="editVendaStatus">EM_ANDAMENTO</span>
+              <span class="status-chip chip-pay" id="editVendaPagamentoBadge">NÃO_PAGO</span>
             </div>
-
-            <div class="venda-head-actions d-flex flex-wrap align-items-center gap-2">
-              <button class="chip-btn d-flex align-items-center gap-1" id="btnVendaPDF">
-                <i class="bi bi-file-earmark-pdf"></i>
-                <span>PDF</span>
-              </button>
-
-              <button class="chip-btn chip-danger d-flex align-items-center gap-1" id="btnVendaCancelar">
-                <i class="bi bi-x-octagon"></i>
-                <span>Cancelar venda</span>
-              </button>
-
-              <button class="icon-btn" id="btnVendaFecharX" data-bs-dismiss="modal" aria-label="Fechar">
-                <i class="bi bi-x-lg"></i>
-              </button>
-            </div>
+            <p class="vm-subtitle" id="vmSubtitle"></p>
           </div>
-        </div>
+
+          <div class="vm-header-side">
+            <div class="vm-total-block">
+              <span class="vm-total-label">Total</span>
+              <strong class="vm-total-value" id="editVendaTotal">R$ 0,00</strong>
+            </div>
+            <button class="icon-btn vm-close" id="btnVendaFecharX" data-bs-dismiss="modal" aria-label="Fechar">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+        </header>
 
         <!-- BODY -->
-        <div class="venda-modal-body">
+        <div class="vm-body">
 
-          <!-- BLOCO 1 -->
-          <section class="venda-card">
-            <header class="venda-card-head">
-              <h2 class="venda-card-title">Dados da venda / orçamento</h2>
-            </header>
+          <!-- COLUNA PRINCIPAL: adicionar item + itens -->
+          <section class="vm-main">
 
-            <div class="venda-card-grid">
-              <div class="venda-form-group">
-                <label for="editVendaDescricaoInput" class="venda-label">Descrição da nota / observação</label>
-                <input
-                  id="editVendaDescricaoInput"
-                  class="venda-input"
-                  placeholder="Ex: Lavagem completa + hidratação banco"
-                />
-              </div>
-              
-            </div>
-          </section>
+            <div class="vm-section">
+              <header class="vm-section-head">
+                <h3 class="vm-section-title">
+                  <i class="bi bi-plus-circle text-muted"></i>
+                  Adicionar item
+                </h3>
+              </header>
 
-          <!-- BLOCO 2 -->
-          <section class="venda-card">
-            <header class="venda-card-head">
-              <h2 class="venda-card-title">Itens da venda</h2>
-            </header>
-
-            <!-- linha adicionar item -->
-            <div class="venda-item-row">
-              <div class="venda-form-group flex-grow-1 position-relative">
-                <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
-                  <label for="editItemServicoBusca" class="venda-label mb-0">Item</label>
-                  <select id="editItemTipo" class="form-select form-select-sm needs-estoque-select"
-                          style="width:auto; min-width:120px;">
-                    <option value="servico">Serviço</option>
-                    <option value="produto" class="needs-estoque">Produto</option>
-                  </select>
+              <div class="vm-add-grid">
+                <!-- Segmented control: serviço/produto -->
+                <div class="vm-segmented" role="tablist" aria-label="Tipo de item">
+                  <button type="button" class="vm-seg active" data-tipo="servico">
+                    <i class="bi bi-tools"></i> Serviço
+                  </button>
+                  <button type="button" class="vm-seg needs-estoque" data-tipo="produto">
+                    <i class="bi bi-box-seam"></i> Produto
+                  </button>
                 </div>
+                <!-- select original mantido escondido como source-of-truth -->
+                <select id="editItemTipo" class="needs-estoque-select" hidden>
+                  <option value="servico">Serviço</option>
+                  <option value="produto" class="needs-estoque">Produto</option>
+                </select>
 
-                <input
-                  id="editItemServicoBusca"
-                  class="venda-input"
-                  placeholder="Digite para buscar…"
-                  autocomplete="off"
-                />
+                <div class="vm-add-search">
+                  <label for="editItemServicoBusca" class="vm-label">Item</label>
+                  <div class="vm-search-wrap">
+                    <i class="bi bi-search vm-search-icon"></i>
+                    <input
+                      id="editItemServicoBusca"
+                      class="vm-input vm-search-input"
+                      placeholder="Digite para buscar…"
+                      autocomplete="off"
+                    />
+                  </div>
+                  <input type="hidden" id="editItemServicoId">
+                  <input type="hidden" id="editItemProdutoId">
+                  <input type="hidden" id="editItemServicoPreco">
+                  <input type="hidden" id="editItemEstoque">
 
-                <input type="hidden" id="editItemServicoId">
-                <input type="hidden" id="editItemProdutoId">
-                <input type="hidden" id="editItemServicoPreco">
-                <input type="hidden" id="editItemEstoque">
+                  <div id="servicoSugestoes" class="autocomplete-box" style="display:none;"></div>
 
-                <div id="servicoSugestoes" class="autocomplete-box" style="display:none;"></div>
-
-                <div id="servicoEscolhidoHint" class="servico-escolhido-hint d-none">
-                  <small class="text-muted">
-                    Selecionado:
+                  <div id="servicoEscolhidoHint" class="vm-pick-hint d-none">
+                    <i class="bi bi-check-circle-fill"></i>
                     <span id="servicoEscolhidoNome">-</span>
-                    — R$
-                    <span id="servicoEscolhidoValor">0,00</span>
-                    <span id="servicoEscolhidoEstoque" class="ms-2"></span>
-                  </small>
+                    <span class="vm-pick-sep">•</span>
+                    R$ <span id="servicoEscolhidoValor">0,00</span>
+                    <span id="servicoEscolhidoEstoque" class="vm-pick-stock"></span>
+                  </div>
                 </div>
-              </div>
 
-              <div class="venda-form-group venda-qtd">
-                <label for="editItemQtd" class="venda-label">Qtd</label>
-                <input id="editItemQtd" type="number" min="1" class="venda-input" value="1" />
-              </div>
+                <div class="vm-add-num">
+                  <label for="editItemQtd" class="vm-label">Qtd</label>
+                  <input id="editItemQtd" type="number" min="1" class="vm-input vm-input-num" value="1" />
+                </div>
 
-              <div class="venda-form-group venda-desc">
-                <label for="editItemDesc" class="venda-label">Desc. (R$)</label>
-                <input id="editItemDesc" type="number" min="0" step="0.01" class="venda-input" value="0" />
-              </div>
+                <div class="vm-add-num">
+                  <label for="editItemDesc" class="vm-label">Desc. (R$)</label>
+                  <input id="editItemDesc" type="number" min="0" step="0.01" class="vm-input vm-input-num" value="0" />
+                </div>
 
-              <div class="venda-form-group venda-addbtn">
-                <button class="add-btn" id="btnItemAdd">
+                <button class="vm-btn vm-btn-primary vm-add-btn" id="btnItemAdd">
                   <i class="bi bi-plus-lg"></i>
                   <span>Adicionar</span>
                 </button>
               </div>
             </div>
 
-            <!-- tabela itens -->
-            <div class="venda-itens-tablewrap">
-              <table class="table table-borderless align-middle venda-itens-table">
-                <thead>
-                  <tr>
-                    <th>Descrição</th>
-                    <th class="text-end">Preço</th>
-                    <th class="text-center">Qtd</th>
-                    <th class="text-end">Desc</th>
-                    <th class="text-end">Subtotal</th>
-                    <th class="text-center">Remover</th>
-                  </tr>
-                </thead>
-                <tbody id="itensTableBody">
-                  <!-- via JS -->
-                </tbody>
-              </table>
+            <div class="vm-section">
+              <header class="vm-section-head">
+                <h3 class="vm-section-title">
+                  <i class="bi bi-list-ul text-muted"></i>
+                  Itens
+                  <span class="vm-count" id="vmItensCount"></span>
+                </h3>
+              </header>
+
+              <div class="vm-itens-wrap">
+                <table class="vm-itens-table">
+                  <thead>
+                    <tr>
+                      <th class="vm-th-desc">Descrição</th>
+                      <th class="vm-th-qtd">Qtd</th>
+                      <th class="vm-th-sub text-end">Subtotal</th>
+                      <th class="vm-th-act"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="itensTableBody">
+                    <!-- via JS -->
+                  </tbody>
+                </table>
+                <div class="vm-itens-empty" id="vmItensEmpty">
+                  <i class="bi bi-inbox"></i>
+                  <p class="mb-0">Nenhum item ainda. Use o formulário acima para adicionar.</p>
+                </div>
+              </div>
             </div>
           </section>
 
-          <!-- BLOCO 3 -->
-          <section class="venda-card">
-            <header class="venda-card-head">
-              <h2 class="venda-card-title">Finalizar venda</h2>
-            </header>
+          <!-- COLUNA LATERAL: resumo + finalizar -->
+          <aside class="vm-aside">
 
-            <div class="venda-final-grid">
-              <div class="venda-form-group">
-                <label for="cartForma" class="venda-label">Forma de pagamento</label>
-                <select id="cartForma" class="venda-input">
+            <div class="vm-section vm-aside-section">
+              <header class="vm-section-head">
+                <h3 class="vm-section-title">
+                  <i class="bi bi-card-text text-muted"></i>
+                  Observação
+                </h3>
+              </header>
+              <div class="vm-section-body">
+                <textarea
+                  id="editVendaDescricaoInput"
+                  class="vm-input vm-textarea"
+                  rows="3"
+                  placeholder="Ex: Lavagem completa + hidratação banco"
+                ></textarea>
+              </div>
+            </div>
+
+            <div class="vm-section vm-aside-section">
+              <header class="vm-section-head">
+                <h3 class="vm-section-title">
+                  <i class="bi bi-cash-coin text-muted"></i>
+                  Pagamento
+                </h3>
+              </header>
+              <div class="vm-section-body">
+                <div class="vm-pay-options" role="radiogroup" aria-label="Forma de pagamento">
+                  <button type="button" class="vm-pay" data-pay="PIX">
+                    <i class="bi bi-qr-code"></i> PIX
+                  </button>
+                  <button type="button" class="vm-pay" data-pay="CARTAO">
+                    <i class="bi bi-credit-card"></i> Cartão
+                  </button>
+                  <button type="button" class="vm-pay" data-pay="DINHEIRO">
+                    <i class="bi bi-cash"></i> Dinheiro
+                  </button>
+                </div>
+                <select id="cartForma" hidden>
                   <option value="PIX">PIX</option>
                   <option value="CARTAO">CARTAO</option>
                   <option value="DINHEIRO">DINHEIRO</option>
                 </select>
               </div>
-
-              <div class="venda-final-actions">
-                <button class="finish-btn" id="btnFinalizar">
-                  <i class="bi bi-check2-circle"></i>
-                  <span>Finalizar</span>
-                </button>
-
-
-              </div>
             </div>
-          </section>
+
+            <div class="vm-section vm-summary">
+              <div class="vm-summary-row vm-summary-total">
+                <span>Total</span>
+                <strong id="vmSummaryTotal">R$ 0,00</strong>
+              </div>
+              <button class="vm-btn vm-btn-success vm-btn-block" id="btnFinalizar">
+                <i class="bi bi-check2-circle"></i>
+                <span>Finalizar venda</span>
+              </button>
+              <button class="vm-btn vm-btn-outline vm-btn-block" id="btnSalvarCabecalho">
+                <i class="bi bi-save2"></i>
+                <span>Salvar alterações</span>
+              </button>
+              <button class="vm-btn vm-btn-pdf vm-btn-block" id="btnVendaPDF">
+                <i class="bi bi-file-earmark-pdf"></i>
+                <span>Baixar PDF</span>
+              </button>
+              <button class="vm-link-danger" id="btnVendaCancelar">
+                <i class="bi bi-x-octagon"></i> Cancelar venda
+              </button>
+            </div>
+          </aside>
         </div>
 
         <!-- FOOTER -->
-        <div class="venda-modal-footer">
-          <button class="close-footer-btn" id="btnVendaFechar" data-bs-dismiss="modal">
+        <footer class="vm-footer">
+          <button class="vm-btn vm-btn-ghost" id="btnVendaFechar" data-bs-dismiss="modal">
             Fechar
           </button>
-          <button class="save-btn" id="btnSalvarCabecalho">
-              <i class="bi bi-save2"></i>
-              <span>Salvar alterações</span>
-          </button>
-        </div>
+        </footer>
 
       </div>
     </div>
